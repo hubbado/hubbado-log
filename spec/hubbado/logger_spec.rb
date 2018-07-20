@@ -1,4 +1,5 @@
 require 'spec_helper'
+require "hubbado/logger"
 require 'ffaker'
 
 RSpec.describe Hubbado::Logger do

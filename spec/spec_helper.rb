@@ -1,5 +1,4 @@
 require "bundler/setup"
-require "hubbado/logger"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
