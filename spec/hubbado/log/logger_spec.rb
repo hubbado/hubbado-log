@@ -1,34 +1,12 @@
 require 'spec_helper'
 require 'ffaker'
+require 'hubbado/log/fake_log_handler'
 
 RSpec.describe Hubbado::Log::Logger do
-  let(:dummy_log_handler_class) do
-    Class.new(::Hubbado::Log::LogHandler) do
-      attr_accessor :severity
-      attr_accessor :message
-      attr_accessor :data
-      attr_accessor :stacktrace
-
-      def initialize
-        self.severity = nil
-        self.message = nil
-        self.data = nil
-        self.stacktrace = nil
-      end
-
-      def log(severity, message, data = nil, stacktrace = nil)
-        self.severity = severity
-        self.message = message
-        self.data = data
-        self.stacktrace = stacktrace
-      end
-    end
-  end
-
   let(:logger) { described_class.new(handler) }
 
   describe '#log' do
-    let(:handler) { dummy_log_handler_class.new }
+    let(:handler) { Hubbado::Log::FakeLogHandler.new }
     let(:message) { FFaker::HipsterIpsum.sentence }
     let(:severity) { :info }
     let(:stacktrace) { Array.new(10) { FFaker::HipsterIpsum.sentence } }

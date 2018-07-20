@@ -16,9 +16,16 @@ module Hubbado
         yield @config
       end
 
+      def loggers
+        @loggers ||= config.loggers.map(&:new)
+      end
+
+      def logger
+        @logger = Logger.new(loggers)
+      end
+
       def log(*args)
-        @logger ||= Logger.new(config.loggers.map(&:new))
-        @logger.log(*args)
+        logger.log(*args)
       end
     end
   end
