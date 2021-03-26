@@ -6,7 +6,7 @@ AllCops:
     - db/**
     - config/**
     - script/**
-  TargetRubyVersion: 2.4.1
+  TargetRubyVersion: 3.0.0
 
 StringLiterals:
   Enabled: false
