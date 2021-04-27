@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "hubbado-log"
-  spec.version       = "0.2"
+  spec.version       = "0.2.1"
   spec.authors       = ["Sam Stickland"]
   spec.email         = ["sam@hubbado.com"]
 
@@ -31,7 +31,6 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "ffaker"
-  spec.add_development_dependency "hubbado-style"
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
 end
