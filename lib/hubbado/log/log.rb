@@ -12,6 +12,8 @@ module Hubbado
 
       def configuration
         yield @config
+
+        @loggers = nil
       end
 
       def loggers
