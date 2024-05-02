@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+
+system("bundle exec ruby test/automated.rb") or exit 1

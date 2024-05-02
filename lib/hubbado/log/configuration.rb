@@ -1,5 +1,5 @@
 module Hubbado
-  module Log
+  class Log
     class Configuration
       attr_accessor :loggers
 
