@@ -2,8 +2,10 @@ module Hubbado
   class Log
     class Logger
       attr_accessor :log_handlers
+      attr_accessor :subject
 
-      def initialize(log_handlers = [])
+      def initialize(subject, log_handlers = [])
+        self.subject = subject
         self.log_handlers = Array(log_handlers)
       end
 
@@ -12,14 +14,14 @@ module Hubbado
           raise ArgumentError, "Unknown serverity #{severity}"
         end
 
-        stacktrace = if data&.is_a?(Exception)
+        stacktrace = if data.is_a?(Exception)
                        data.full_message
                      elsif STACKTRACE_SEVERITIES.include?(severity)
                        format_stacktrace Kernel.caller
                      end
 
         log_handlers.each do |handler|
-          handler.log(severity, msg, data, stacktrace)
+          handler.log(subject, severity, msg, data, stacktrace)
         end
       end
 

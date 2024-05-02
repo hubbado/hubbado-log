@@ -24,7 +24,7 @@ module Hubbado
       end
 
       def logger
-        @logger = Logger.new(loggers)
+        @logger = Logger.new('', loggers)
       end
 
       def log(*args)
@@ -54,7 +54,7 @@ module Hubbado
 
     def self.configure(receiver, attr_name: nil)
       attr_name ||= :logger
-      instance = Logger.new(loggers)
+      instance = Logger.new(receiver.class.name, loggers)
       receiver.public_send("#{attr_name}=", instance)
       instance
     end

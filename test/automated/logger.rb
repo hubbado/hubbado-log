@@ -3,7 +3,8 @@ require 'ffaker'
 
 context "Logger" do
   handler = Log::Controls::LogHandler.new
-  logger = Log::Logger.new(handler)
+  subject = Log::Controls::Subject.example
+  logger = Log::Logger.new(subject, handler)
 
   context '#log' do
     message = Log::Controls::Message.example
@@ -23,6 +24,7 @@ context "Logger" do
         test 'Passes details without a stacktrace to the log handler' do
           logger.log(severity, message)
 
+          assert handler.subject == subject
           assert handler.severity == severity
           assert handler.message == message
           assert handler.data.nil?
@@ -39,6 +41,7 @@ context "Logger" do
         test 'Passes details with a stacktrace to the log handler' do
           logger.log(severity, message)
 
+          assert handler.subject == subject
           assert handler.severity == severity
           assert handler.message == message
           assert handler.data.nil?
@@ -56,6 +59,7 @@ context "Logger" do
       test 'Passes details with data to the log handler' do
         logger.log(severity, message, data)
 
+        assert handler.subject == subject
         assert handler.severity == severity
         assert handler.message == message
         assert handler.data == data
@@ -70,6 +74,7 @@ context "Logger" do
       test 'Passes the Exception.full_message as the stacktrace' do
         logger.log(severity, message, exception)
 
+        assert handler.subject == subject
         assert handler.severity == severity
         assert handler.message == message
         assert handler.data == exception

@@ -17,5 +17,9 @@ context "Log" do
         obj.logger.log(:info, 'some message')
       end
     end
+
+    test "Sets subject" do
+      assert obj.logger.subject == 'Example'
+    end
   end
 end
