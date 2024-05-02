@@ -1,5 +1,5 @@
 module Hubbado
-  module Log
+  class Log
     module Controls
       module Exception
         def self.example

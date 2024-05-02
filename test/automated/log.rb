@@ -3,7 +3,7 @@ require_relative 'automated_init'
 context "Log" do
   test 'Log to configured loggers' do
     Hubbado::Log.configuration do |config|
-      config.loggers = [Controls::LogHandler]
+      config.loggers = [Log::Controls::LogHandler]
     end
 
     Hubbado::Log.log(:info, 'test')

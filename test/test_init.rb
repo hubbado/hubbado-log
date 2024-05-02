@@ -13,4 +13,4 @@ require "hubbado/log/controls"
 require "debug"
 require "test_bench"; TestBench.activate
 
-include Hubbado::Log
+include Hubbado

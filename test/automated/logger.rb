@@ -2,11 +2,11 @@ require_relative 'automated_init'
 require 'ffaker'
 
 context "Logger" do
-  handler = Controls::LogHandler.new
-  logger = Logger.new(handler)
+  handler = Log::Controls::LogHandler.new
+  logger = Log::Logger.new(handler)
 
   context '#log' do
-    message = Controls::Message.example
+    message = Log::Controls::Message.example
 
     context 'with an invalid severity' do
       severity = 'DEADBEEF'
@@ -51,7 +51,7 @@ context "Logger" do
 
     context 'with regular data' do
       severity =  :info
-      data = Controls::Data.example
+      data = Log::Controls::Data.example
 
       test 'Passes details with data to the log handler' do
         logger.log(severity, message, data)
@@ -66,7 +66,7 @@ context "Logger" do
     context 'when the data is an exception' do
       severity = :error
 
-      exception = Controls::Exception.example
+      exception = Log::Controls::Exception.example
       test 'Passes the Exception.full_message as the stacktrace' do
         logger.log(severity, message, exception)
 

@@ -1,7 +1,7 @@
 require_relative 'automated_init'
 
 context "Configuation" do
-  configuration = Configuration.new
+  configuration = Log::Configuration.new
 
   context 'loggers' do
     test 'Empty array by default' do

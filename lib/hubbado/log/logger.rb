@@ -1,5 +1,5 @@
 module Hubbado
-  module Log
+  class Log
     class Logger
       attr_accessor :log_handlers
 
