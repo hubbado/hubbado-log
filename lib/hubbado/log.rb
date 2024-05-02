@@ -12,7 +12,7 @@ module Hubbado
     class << self
       attr_reader :config
 
-      def configure
+      def configuration
         yield @config
       end
 

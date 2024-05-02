@@ -3,7 +3,7 @@ require 'hubbado/log/fake_log_handler'
 
 RSpec.describe Hubbado::Log do
   it 'can log to configured loggers' do
-    Hubbado::Log.configure do |config|
+    Hubbado::Log.configuration do |config|
       config.loggers = [Hubbado::Log::FakeLogHandler]
     end
 
