@@ -1,10 +1,9 @@
-# coding: utf-8
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |spec|
   spec.name          = "hubbado-log"
-  spec.version       = "0.2.1"
+  spec.version       = "1.0.0"
   spec.authors       = ["Sam Stickland"]
   spec.email         = ["sam@hubbado.com"]
 
