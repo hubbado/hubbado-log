@@ -1,5 +1,4 @@
 require_relative 'automated_init'
-require 'ffaker'
 
 context "Logger" do
   handler = Log::Controls::LogHandler.new
