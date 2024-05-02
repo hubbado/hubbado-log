@@ -52,33 +52,57 @@ context "Logger" do
       end
     end
 
-    context 'with regular data' do
-      severity =  :info
-      data = Log::Controls::Data.example
+    context "Severity methods" do
+      Log::SEVERITIES.each_key do |severity|
+        context "##{severity}" do
+          logger.send severity, message
 
-      test 'Passes details with data to the log handler' do
-        logger.log(severity, message, data)
-
-        assert handler.subject == subject
-        assert handler.severity == severity
-        assert handler.message == message
-        assert handler.data == data
-        assert handler.stacktrace.nil?
+          test "Sets severity" do
+            assert handler.severity == severity
+          end
+        end
       end
     end
 
-    context 'when the data is an exception' do
-      severity = :error
+    context "Data" do
+      context "Without data" do
+        severity = :info
 
-      exception = Log::Controls::Exception.example
-      test 'Passes the Exception.full_message as the stacktrace' do
+        logger.log(severity, message, nil)
+
+        test 'Passes nil data to the log handler' do
+          assert handler.data.nil?
+        end
+      end
+
+      context 'with regular data' do
+        severity =  :info
+        data = Log::Controls::Data.example
+
+        logger.log(severity, message, data)
+
+        test 'Passes data to the log handler' do
+          assert handler.data == data
+        end
+
+        test 'Does not pass a stractrace' do
+          assert handler.stacktrace.nil?
+        end
+      end
+
+      context 'when the data is an exception' do
+        severity = :error
+        exception = Log::Controls::Exception.example
+
         logger.log(severity, message, exception)
 
-        assert handler.subject == subject
-        assert handler.severity == severity
-        assert handler.message == message
-        assert handler.data == exception
-        assert handler.stacktrace == exception.full_message
+        test 'Passes data to the log handler' do
+          assert handler.data == exception
+        end
+
+        test 'Passes the Exception.full_message as the stacktrace' do
+          assert handler.stacktrace == exception.full_message
+        end
       end
     end
   end

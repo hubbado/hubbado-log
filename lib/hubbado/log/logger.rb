@@ -25,6 +25,12 @@ module Hubbado
         end
       end
 
+      SEVERITIES.each_key do |severity|
+        define_method severity do |msg, data = nil|
+          log severity, msg, data
+        end
+      end
+
       private
 
       def format_stacktrace(stacktrace)
