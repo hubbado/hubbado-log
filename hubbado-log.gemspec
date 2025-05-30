@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["Hubbado Devs"]
   s.email = ["devs@hubbado.com"]
-  s.homepage = "https://www.github.com/hubbado/logger"
+  s.homepage = "https://www.github.com/hubbado/hubbado-log"
   s.license  = "MIT"
 
   s.metadata["homepage_uri"] = s.homepage
@@ -14,8 +14,6 @@ Gem::Specification.new do |s|
 
   s.require_paths = ["lib"]
 
-  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
-  # to allow pushing to a single host or delete this section to allow pushing to any host.
   s.files = Dir.glob(%w[
     lib/**/*.rb
     *.gemspec
