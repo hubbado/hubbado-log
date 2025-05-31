@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "hubbado-log"
-  s.version = "1.0.0"
+  s.version = "1.0.1"
   s.summary = "Lightweight pluggable logging system"
 
   s.authors = ["Hubbado Devs"]
@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
     CHANGELOG*
   ])
 
-  s.required_ruby_version = '> 2.5'
+  s.required_ruby_version = '>= 3.2'
 
   s.add_runtime_dependency 'evt-dependency'
 
