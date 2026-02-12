@@ -80,11 +80,18 @@ echo
 echo "Installing bundle"
 echo "- - -"
 
-cmd="bundle install --standalone --path=./gems"
+cmd="bundle config set path gems"
+
+echo $cmd
+($cmd)
 
 if [ operational == "$posture" ]; then
-  cmd="$cmd --without=development"
+  cmd="bundle config set without development"
+  echo $cmd
+  ($cmd)
 fi
+
+cmd="bundle install --standalone"
 
 echo $cmd
 ($cmd)
