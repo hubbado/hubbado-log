@@ -52,17 +52,19 @@ context "Level" do
     end
   end
 
+  # The configuration is handed a level, never the environment it might have come from.
+  # Reading LOG_LEVEL is Log's, done once, and what arrives here is only ever a value.
   context 'Configured level' do
-    context 'LOG_LEVEL naming a severity' do
-      configuration = Log::Configuration.new(env: { 'LOG_LEVEL' => 'debug' })
+    context 'Named a severity' do
+      configuration = Log::Configuration.new(level: 'debug')
 
-      test 'Is the level' do
+      test 'Is that severity' do
         assert configuration.level == :debug
       end
     end
 
-    context 'LOG_LEVEL unset' do
-      configuration = Log::Configuration.new(env: {})
+    context 'Named nothing' do
+      configuration = Log::Configuration.new
 
       test 'Is info, so tracing is off until somebody asks for it' do
         assert configuration.level == :info
@@ -72,19 +74,19 @@ context "Level" do
     # LOG_LEVEL is Eventide's in hubbado_saas, where a dozen test_init files write "_min" into
     # it and an interactive start.sh writes "debug". Sharing the variable is deliberate, so a
     # vocabulary that is not ours has to be survivable rather than fatal.
-    context 'LOG_LEVEL naming something that is not a severity' do
-      configuration = Log::Configuration.new(env: { 'LOG_LEVEL' => '_min' })
+    context 'Named something that is not a severity' do
+      configuration = Log::Configuration.new(level: '_min')
 
       test 'Falls back to info rather than raising' do
         assert configuration.level == :info
       end
     end
 
-    context 'Set directly' do
-      configuration = Log::Configuration.new(env: { 'LOG_LEVEL' => 'debug' })
+    context 'Set after construction' do
+      configuration = Log::Configuration.new(level: 'debug')
       configuration.level = :warn
 
-      test 'Overrides the environment' do
+      test 'Is what was set' do
         assert configuration.level == :warn
       end
     end
