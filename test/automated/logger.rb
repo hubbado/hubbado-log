@@ -6,7 +6,7 @@ context "Logger" do
 
   # What #log hands a handler, across every severity there is. Built at the lowest level so
   # that stays the subject — which severities are printed at all is Level's.
-  logger = Log::Logger.new(subject, handler, level: :debug)
+  logger = Log::Logger.new(subject, handler, level: :trace)
 
   context '#log' do
     message = Log::Controls::Message.example

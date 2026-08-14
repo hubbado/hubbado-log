@@ -33,7 +33,19 @@ Without `config.level`, the level comes from the `LOG_LEVEL` environment variabl
 
     $ LOG_LEVEL=debug ./my-command
 
-It defaults to `info`, so `debug` is off until it is asked for. A single logger can
+It defaults to `info`, so `debug` and `trace` are off until they are asked for.
+
+Levels, lowest first:
+
+| Level | What it records |
+|---|---|
+| `trace` | Most detailed tracing of program flow |
+| `debug` | Completion of a secondary operation of a class or utility, or other details |
+| `info` | Completion of the principal operation of a class or utility |
+| `warn` | Unexpected state that is not an error, or is recoverable, and that a developer or operator should examine |
+| `error` | Message logged just prior to raising an error |
+| `fatal` | Message recorded, when possible, as the process is terminating due to an error |
+ A single logger can
 name its own with `Hubbado::Log::Logger.new(subject, handlers, level: :debug)`.
 
 `LOG_LEVEL` is shared with Eventide's log gem, which writes names this gem does not

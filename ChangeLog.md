@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.2.0 - 2026-08-14]
+## Added
+- A `trace` level, below `debug`. Program flow — a line per iteration of a loop —
+  so that turning on the completion of secondary operations does not also turn on
+  a line per item in a set.
+
 # [1.1.0 - 2026-08-14]
 ## Added
 - A level, below which a line reaches no handler. Set it with `config.level`, or
