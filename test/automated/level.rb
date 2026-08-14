@@ -20,6 +20,41 @@ context "Level" do
     end
   end
 
+  # The most detailed there is: tracing program flow, which a class emits per iteration of a
+  # loop. It sits under debug so that turning on the completion of secondary operations does
+  # not also turn on a line per candidate in a set.
+  context 'a trace line, under debug' do
+    context 'at debug' do
+      handler = Log::Controls::LogHandler.new
+
+      logger(handler, level: :debug).trace(message)
+
+      test 'Reaches no handler' do
+        assert handler.severity.nil?
+      end
+    end
+
+    context 'at trace' do
+      handler = Log::Controls::LogHandler.new
+
+      logger(handler, level: :trace).trace(message)
+
+      test 'Reaches the handler' do
+        assert handler.severity == :trace
+      end
+    end
+
+    context 'at trace, for a line above it' do
+      handler = Log::Controls::LogHandler.new
+
+      logger(handler, level: :trace).info(message)
+
+      test 'Reaches the handler' do
+        assert handler.severity == :info
+      end
+    end
+  end
+
   context 'a line at the level' do
     handler = Log::Controls::LogHandler.new
 

@@ -2,7 +2,10 @@ module Hubbado
   class Log
     include Dependency
 
-    SEVERITIES = { debug: 0, info: 1, warn: 2, error: 3, fatal: 4, unknown: 5 }.freeze
+    # Ordered, because the level compares against them. `trace` is program flow, a line per
+    # iteration; `debug` is the completion of a secondary operation, or a detail worth keeping;
+    # `info` is the completion of the principal operation of a class or utility.
+    SEVERITIES = { trace: 0, debug: 1, info: 2, warn: 3, error: 4, fatal: 5, unknown: 6 }.freeze
     STACKTRACE_SEVERITIES = %i[warn error fatal unknown].freeze
 
     LEVEL_VARIABLE = "LOG_LEVEL".freeze
