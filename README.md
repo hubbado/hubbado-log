@@ -16,7 +16,29 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install hubbado-logger
+    $ gem install hubbado-log
+
+## Level
+
+A line below the level reaches no handler.
+
+```ruby
+Hubbado::Log.configuration do |config|
+  config.loggers = [MyStderrHandler]
+  config.level = :debug
+end
+```
+
+Without `config.level`, the level comes from the `LOG_LEVEL` environment variable:
+
+    $ LOG_LEVEL=debug ./my-command
+
+It defaults to `info`, so `debug` is off until it is asked for. A single logger can
+name its own with `Hubbado::Log::Logger.new(subject, handlers, level: :debug)`.
+
+`LOG_LEVEL` is shared with Eventide's log gem, which writes names this gem does not
+know. A name that is not one of `debug`, `info`, `warn`, `error`, `fatal` or
+`unknown` leaves the level at `info` rather than raising.
 
 ## Development
 

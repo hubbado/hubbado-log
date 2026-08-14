@@ -3,7 +3,10 @@ require_relative 'automated_init'
 context "Logger" do
   handler = Log::Controls::LogHandler.new
   subject = Log::Controls::Subject.example
-  logger = Log::Logger.new(subject, handler)
+
+  # What #log hands a handler, across every severity there is. Built at the lowest level so
+  # that stays the subject — which severities are printed at all is Level's.
+  logger = Log::Logger.new(subject, handler, level: :debug)
 
   context '#log' do
     message = Log::Controls::Message.example

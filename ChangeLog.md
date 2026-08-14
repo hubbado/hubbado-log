@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.1.0 - 2026-08-14]
+## Added
+- A level, below which a line reaches no handler. Set it with `config.level`, or
+  with the `LOG_LEVEL` environment variable, which defaults to `info` — so
+  `debug` is off unless it is asked for.
+
+## Changed
+- `Logger.new` takes a `level:` keyword. A logger built without one follows the
+  configuration.
+- `LOG_LEVEL` is shared with Eventide's log gem, which writes names this gem does
+  not know. A name that is not a severity leaves the level at `info` rather than
+  raising.
+
 # [1.0.1 - 2024-05-30]
 # Changed
 - Release to stop a SHA mismatch between our private github package repo and Ruby Gems
