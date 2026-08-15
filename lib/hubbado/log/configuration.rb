@@ -1,16 +1,24 @@
 module Hubbado
   class Log
     class Configuration
-      # Tracing is off until somebody asks for it, which is what lets a debug line be written
+      # Tracing is off until somebody asks for it, which is what lets a debug message be written
       # for a human watching one run without it also reaching every unattended log.
       DEFAULT_LEVEL = :info
 
       attr_accessor :loggers
       attr_reader :level
+      attr_reader :tags
 
-      def initialize(level: nil)
+      def initialize(level: nil, tags: nil)
         @loggers = []
         self.level = level || DEFAULT_LEVEL
+        self.tags = tags
+      end
+
+      # Takes the LOG_TAGS string as readily as a list, so nothing upstream has to know the
+      # syntax in order to hand a value in.
+      def tags=(value)
+        @tags = Tags.parse(value)
       end
 
       # A name rather than a severity is answered with the default instead of an exception.

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "hubbado-log"
-  s.version = "1.2.0"
+  s.version = "1.3.0"
   s.summary = "Lightweight pluggable logging system"
 
   s.authors = ["Hubbado Devs"]
