@@ -48,10 +48,8 @@ module Hubbado
                        format_stacktrace Kernel.caller
                      end
 
-        # A copy each, so a handler that appends a tag of its own does not change what the next
-        # one is given.
         log_handlers.each do |handler|
-          handler.log(subject, severity, msg, data, stacktrace, tags: message_tags.dup)
+          handler.log(subject, severity, msg, data, stacktrace)
         end
       end
 

@@ -102,7 +102,33 @@ defect, found while building `tag!`, and the only thing that needed it. Fixing a
 hits, with no spec left to cover it, would be the same mistake in a different place. It wants
 its own card.
 
-### The handler takes tags as a keyword
+### The handler is not given the tags at all
+
+**Reversed before merge, and with it the major version.** What follows is the reasoning that
+put the argument there; the reasoning that took it out is below it.
+
+Asked whether evt-log prints tags, the answer turned out to be no — `Format.line` never receives
+them (`evt-log lib/log/write.rb:10`), and a tagged message and an untagged one render
+identically. Tags there are a filtering axis and nothing else; the only place they travel onward
+is the telemetry sink, which is test observation.
+
+That prompted the right question: does anything need them downstream? Nothing did. No handler in
+any consuming repository prints or routes on a tag, and the five handlers written during the
+trial upgrade all took `**` and discarded them. The argument's only consumer was the gem's own
+control, so its own spec could assert it arrived — a hook whose only implementer is its own test,
+which is exactly what `tag!` was removed for an hour earlier.
+
+The price was much higher here. Because the gem sent `tags:` on every message, all eighteen
+handlers across five repositories raised `ArgumentError` on the first message they were given,
+whether or not anything was ever tagged. That is the whole of the major version: the card's value
+— filtering a frequent completion instead of demoting it — lives in `LOG_TAGS` and the call-site
+keywords, and a handler receiving tags adds nothing to it.
+
+So the argument is gone, the gem is **1.3.0**, and nothing that exists needs an edit. Adding it
+later is another break, which is the one real cost; it is worth paying when a handler exists that
+would use it, and not before.
+
+### What the argument was, while it existed
 
 `log(subject, severity, msg, data = nil, stacktrace = nil, tags: [])`. Self-describing beside
 five positionals that are already two-thirds `nil`, and it makes this the last breaking addition

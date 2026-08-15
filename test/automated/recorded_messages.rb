@@ -91,7 +91,6 @@ context "Recorded messages" do
 
     test 'Leaves the attributes on the written one' do
       assert handler.message == 'written'
-      assert handler.tags == [:http]
     end
   end
 

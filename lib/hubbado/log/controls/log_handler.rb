@@ -31,14 +31,13 @@ module Hubbado
           [handler, Logger.new(subject, [handler], level: level, tags: tags)]
         end
 
-        def log(subject, severity, message, data = nil, stacktrace = nil, tags: [])
+        def log(subject, severity, message, data = nil, stacktrace = nil)
           messages << {
             subject: subject,
             severity: severity,
             message: message,
             data: data,
-            stacktrace: stacktrace,
-            tags: tags
+            stacktrace: stacktrace
           }
         end
 
@@ -58,7 +57,7 @@ module Hubbado
 
         # The most recent message. Derived rather than assigned alongside `messages`, so the two
         # cannot disagree about which message is the latest.
-        %i[subject severity message data stacktrace tags].each do |field|
+        %i[subject severity message data stacktrace].each do |field|
           define_method(field) { messages.last&.fetch(field) }
         end
       end

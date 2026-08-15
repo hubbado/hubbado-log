@@ -31,8 +31,8 @@ context "Log" do
 
     handler = Hubbado::Log.loggers.first
 
-    test 'Carries them to the handler' do
-      assert handler.tags == [:http]
+    test 'Filters on them' do
+      assert handler.logged?
     end
 
     test 'Leaves the data alone' do

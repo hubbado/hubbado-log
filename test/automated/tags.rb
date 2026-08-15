@@ -22,10 +22,15 @@ context "Tags" do
   # Built here rather than through the control's factory, which names its own list: this is the
   # spec for the operator's, so it has to be the one deciding.
   def self.writes?(log_tags, message_tags)
+    written?(log_tags) { |logger| logger.info(Log::Controls::Message.example, tags: message_tags) }
+  end
+
+  # For a call site that names its tags some other way than the plural keyword.
+  def self.written?(log_tags)
     handler = Log::Controls::LogHandler.new
     logger = Log::Logger.new(Log::Controls::Subject.example, handler, level: :trace)
 
-    tagged(log_tags) { logger.info(Log::Controls::Message.example, tags: message_tags) }
+    tagged(log_tags) { yield logger }
 
     handler.logged?
   end
@@ -121,29 +126,24 @@ context "Tags" do
   end
 
   # The handler is given the tags rather than only the decision made from them, so that one can
-  # route on a concern rather than print it.
+  # Both keywords are accepted and both kept. Asserted through the filter, which is where tags
+  # are observable: nothing downstream is given them, so a spec reading them back off a handler
+  # would be reading its own double.
   context 'Naming tags at a call site' do
-    handler, logger = Log::Controls::LogHandler.logger
-
-    tagged('_all') do
-      logger.info(message, tag: :request, tags: [:response])
+    test 'The singular names one' do
+      assert(written?('request') { |logger| logger.info(message, tag: :request) })
     end
 
-    # Compared against a list rather than asked `include?`: if the message were ever filtered
-    # out, `tags` would be nil and `include?` would raise instead of failing. Both are carried;
-    # the order they arrive in is not something to depend on.
-    test 'Both the singular and the plural reach the handler' do
-      assert handler.tags.to_a.sort == %i[request response]
+    test 'The plural names one' do
+      assert(written?('response') { |logger| logger.info(message, tags: [:response]) })
     end
-  end
 
-  context 'A message naming no tags' do
-    handler, logger = Log::Controls::LogHandler.logger
+    test 'Given both, the singular is still kept' do
+      assert(written?('request') { |logger| logger.info(message, tag: :request, tags: [:response]) })
+    end
 
-    logger.info(message)
-
-    test 'Reaches the handler with none' do
-      assert handler.tags == []
+    test 'Given both, the plural is still kept' do
+      assert(written?('response') { |logger| logger.info(message, tag: :request, tags: [:response]) })
     end
   end
 
@@ -155,12 +155,8 @@ context "Tags" do
       assert writes?('http', ['http'])
     end
 
-    test 'Reaches the handler as a symbol' do
-      handler, logger = Log::Controls::LogHandler.logger
-
-      tagged('_all') { logger.info(message, tags: ['http'], tag: 'cache') }
-
-      assert handler.tags == %i[http cache]
+    test 'Is matched whichever keyword names it' do
+      assert(written?('cache') { |logger| logger.info(message, tag: 'cache') })
     end
   end
 
@@ -201,24 +197,29 @@ context "Tags" do
     end
   end
 
-  # Handlers run in turn over the same message. One that appends a tag of its own — the obvious
-  # first use of being given them — must not change what the next handler receives.
-  context 'More than one handler' do
-    appending = Class.new(Hubbado::Log::LogHandler) do
-      def log(_subject, _severity, _message, _data = nil, _stacktrace = nil, tags: [])
-        tags << :appended_by_a_handler
+  # A handler's arguments did not change, so one written against any earlier version still
+  # takes what it is given. Tags decide whether it is called at all, and nothing more.
+  context 'A handler written before tags existed' do
+    unchanged = Class.new(Hubbado::Log::LogHandler) do
+      attr_reader :seen
+
+      def log(subject, severity, message, data = nil, stacktrace = nil)
+        (@seen ||= []) << [subject, severity, message, data, stacktrace]
       end
     end.new
 
-    recording = Log::Controls::LogHandler.new
-
-    tagged('_all') do
-      Log::Logger.new(Log::Controls::Subject.example, [appending, recording], level: :trace)
-        .info(message, tag: :http)
+    tagged('http') do
+      logger = Log::Logger.new(Log::Controls::Subject.example, unchanged, level: :trace)
+      logger.info(message, tag: :http)
+      logger.info(message, tag: :cache)
     end
 
-    test 'The second is given what the message carried' do
-      assert recording.tags == [:http]
+    test 'Is given the message the list named' do
+      assert unchanged.seen.length == 1
+    end
+
+    test 'With the arguments it has always taken' do
+      assert unchanged.seen.first.length == 5
     end
   end
 end
