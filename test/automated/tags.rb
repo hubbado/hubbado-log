@@ -125,7 +125,6 @@ context "Tags" do
     end
   end
 
-  # The handler is given the tags rather than only the decision made from them, so that one can
   # Both keywords are accepted and both kept. Asserted through the filter, which is where tags
   # are observable: nothing downstream is given them, so a spec reading them back off a handler
   # would be reading its own double.
