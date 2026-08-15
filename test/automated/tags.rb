@@ -139,11 +139,15 @@ context "Tags" do
     end
 
     test 'Given both, the singular is still kept' do
-      assert(written?('request') { |logger| logger.info(message, tag: :request, tags: [:response]) })
+      assert(written?('request') do |logger|
+        logger.info(message, tag: :request, tags: [:response])
+      end)
     end
 
     test 'Given both, the plural is still kept' do
-      assert(written?('response') { |logger| logger.info(message, tag: :request, tags: [:response]) })
+      assert(written?('response') do |logger|
+        logger.info(message, tag: :request, tags: [:response])
+      end)
     end
   end
 
