@@ -41,11 +41,11 @@ context "Logger substitute" do
     logger.info('third')
 
     test 'Keeps them in order' do
-      assert logger.messages.map { |written| written.fetch(:message) } == %w[first second third]
+      assert logger.messages == %w[first second third]
     end
 
     test 'Selects the ones written at one severity' do
-      assert logger.messages(:info).map { |written| written.fetch(:message) } == %w[first third]
+      assert logger.messages(:info) == %w[first third]
     end
 
     test 'Answers with nothing for a severity never written' do
@@ -65,18 +65,27 @@ context "Logger substitute" do
     end
 
     test 'Selects it' do
-      assert logger.messages(:warn).length == 1
+      assert logger.messages(:warn) == [message]
     end
   end
 
-  context 'A message carrying an exception' do
+  # #messages is what a class said; #logged is everything about what it said.
+  context 'What was logged' do
     logger = Log::Controls::Logger.example
     exception = Log::Controls::Exception.example
 
     logger.error('the card did not finish', exception)
 
-    test 'Keeps the exception it was handed' do
-      assert logger.messages(:error).first.fetch(:data).equal?(exception)
+    test 'Carries the message' do
+      assert logger.logged(:error).first.message == 'the card did not finish'
+    end
+
+    test 'Carries the severity' do
+      assert logger.logged(:error).first.severity == :error
+    end
+
+    test 'Carries the exception it was handed' do
+      assert logger.logged(:error).first.data.equal?(exception)
     end
   end
 

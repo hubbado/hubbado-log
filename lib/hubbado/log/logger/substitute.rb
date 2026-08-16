@@ -4,33 +4,39 @@ module Hubbado
       # What a logger was told rather than what it wrote. Extended onto a mimic of Logger, so a
       # class under test is handed something that answers as a logger and keeps what it was given.
       module Substitute
-        # Every message, in order. Named with a severity, only the ones written at it.
+        Line = Data.define(:severity, :message, :data)
+
+        # Everything about what a class said, in order. Named with a severity, only what it said
+        # at that one.
         #
         # A severity reaches a logger two ways: as the method, from the generated severity
         # methods, or as #log's first argument. Both are compared as symbols, because #log takes
         # a String as readily and passes on what it was given.
-        def messages(severity = nil)
-          written = invocations.map { |invocation| message(invocation) }
+        def logged(severity = nil)
+          lines = invocations.map { |invocation| line(invocation) }
 
-          return written if severity.nil?
+          return lines if severity.nil?
 
-          written.select { |message| message.fetch(:severity) == severity.to_s.to_sym }
+          lines.select { |written| written.severity == severity.to_s.to_sym }
         end
 
-        # Whether, where #messages asks which. Without a severity, whether anything was written
-        # at all.
-        def logged?(severity = nil) = !messages(severity).empty?
+        # What a class said, where #logged is everything about it.
+        def messages(severity = nil) = logged(severity).map(&:message)
+
+        # Whether, where #logged and #messages ask what. Without a severity, whether anything was
+        # written at all.
+        def logged?(severity = nil) = !logged(severity).empty?
 
         private
 
-        def message(invocation)
+        def line(invocation)
           arguments = invocation.arguments
 
-          {
+          Line.new(
             severity: severity(invocation).to_s.to_sym,
             message: arguments[:msg],
             data: arguments[:data]
-          }
+          )
         end
 
         def severity(invocation)

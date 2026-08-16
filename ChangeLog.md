@@ -17,10 +17,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   assert instance.logger.logged?(:error)
   ```
 
-  It answers `logged?` with or without a severity and `messages` with or without
-  one, each message carrying its `severity`, `message` and `data`. It records
-  what it was told rather than writing, so no handler is involved and neither the
-  level nor the tag list decides what a spec can read back.
+  It records what it was told rather than writing, so no handler is involved and
+  neither the level nor the tag list decides what a spec can read back.
+
+  Three questions, each taking an optional severity, and each answering in the
+  terms its name promises:
+
+  | Call | Answers |
+  |---|---|
+  | `logged?(:warn)` | whether anything was written at that severity |
+  | `messages(:warn)` | what it said — the message strings |
+  | `logged(:warn)` | everything about what it said — `severity`, `message`, `data` |
+
+  `messages` and `logged?` are both derived from `logged`, so the three cannot
+  disagree about what counts as written at a severity.
 
   A severity reaches a logger two ways — as the generated method, or as `#log`'s
   first argument — and both answer the same question, compared as symbols.

@@ -139,16 +139,26 @@ assert logger.logged?(:error)
 It records what it was told rather than writing, so no handler is involved and neither the
 configured level nor `LOG_TAGS` decides what can be read back.
 
+Three questions, each taking an optional severity:
+
 | Call | Answers |
 |---|---|
-| `logged?` | whether anything was written at all |
-| `logged?(:warn)` | whether anything was written at that severity |
-| `messages` | every message, in order |
-| `messages(:warn)` | only those written at that severity |
+| `logged?` / `logged?(:warn)` | whether anything was written, at all or at that severity |
+| `messages` / `messages(:warn)` | what it said — the message strings, in order |
+| `logged` / `logged(:warn)` | everything about what it said |
 
-A message carries its `severity`, `message` and `data`. A severity reaches a logger two ways —
-`logger.warn('…')` names it as the method, `logger.log(:warn, '…')` as an argument — and both
-answer the same question, compared as symbols.
+`logged` answers with lines carrying `severity`, `message` and `data`, for the assertion that
+needs more than the text:
+
+```ruby
+assert logger.logged(:error).first.data.equal?(exception)
+```
+
+`messages` and `logged?` are both derived from `logged`, so the three cannot disagree about what
+counts as written at a severity.
+
+A severity reaches a logger two ways — `logger.warn('…')` names it as the method,
+`logger.log(:warn, '…')` as an argument — and both answer the same question, compared as symbols.
 
 The substitute is a mimic of `Logger`, so it answers `is_a?(Hubbado::Log::Logger)` for a class
 that checks, and gains any method `Logger` gains.
