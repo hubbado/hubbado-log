@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.4.1 - 2026-08-16]
+## Fixed
+- A subclass of `Hubbado::Log` can be used as a dependency. It answered `nil`
+  from `config` and raised `undefined method 'loggers' for nil` on its first
+  line, because the configuration was held in a class-level instance variable
+  and those are not inherited.
+
+  ```ruby
+  module Messaging
+    class Log < Hubbado::Log; end
+  end
+
+  class Handler
+    include Messaging::Log::Dependency
+  end
+  ```
+
+  The configuration is the process's now, and holds the handlers built from it,
+  so every class that writes reads the one a command configured and one
+  reconfiguration reaches all of them.
+
 # [1.4.0 - 2026-08-16]
 ## Added
 - A substitute for a logger. `Controls::Logger.example` returns one, and a spec
