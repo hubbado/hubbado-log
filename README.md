@@ -48,13 +48,68 @@ end
 Either way the logger writes through the handlers the process was configured with, at the level
 and tags it was configured for.
 
+## Handlers
+
+A handler is what a log line is finally written *to*. The process names them, and the log system
+builds each one itself with no arguments:
+
+```ruby
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::StderrLogger]
+end
+```
+
+Handlers mostly belong to the application rather than to this gem, because what they write to is
+the application's — a Rails logger, a Rollbar token. Write one by subclassing
+`Hubbado::Log::LogHandler` and implementing `log`:
+
+```ruby
+class MyHandler < Hubbado::Log::LogHandler
+  def log(subject, severity, message, data = nil, stacktrace = nil)
+    ...
+  end
+end
+```
+
+`data` is whatever the call site passed as the second argument, and is an `Exception` when it
+logged one. `stacktrace` is the exception's `full_message` in that case, and otherwise the caller
+stack, synthesised for `warn`, `error`, `fatal` and `unknown` only.
+
+### `Hubbado::Log::StderrLogger`
+
+The one handler this gem ships, because `$stderr` is owned by nobody and every command-line tool
+wants it. It is not loaded by `require 'hubbado/log'` — ask for it:
+
+```ruby
+require 'hubbado/log/stderr_logger'
+```
+
+It prints the severity, the subject and the message on one line, and anything the line carried
+below it:
+
+    WARN Scanning::Sweep: rec_1 skipped, no rate
+    ERROR Scanning::Sweep: rec_2 refused
+    /app/lib/scanning/sweep.rb:41:in 'post': HTTP 400 (RequestError)
+      from /app/lib/scanning/sweep.rb:12:in 'call'
+
+A stacktrace prints at `error` and above, and only when the data is not an exception — an
+exception already prints its own backtrace, so honouring both would print it twice. A `warn`
+stays one line: it is a condition to examine rather than a failure to trace, and a sweep that
+warns per row would otherwise bury itself in Ruby stack.
+
+Pass `io:` to write somewhere else, which is mainly how a spec reads it back:
+
+```ruby
+Hubbado::Log::StderrLogger.new(io: StringIO.new)
+```
+
 ## Level
 
 A message below the level reaches no handler.
 
 ```ruby
 Hubbado::Log.configuration do |config|
-  config.loggers = [MyStderrHandler]
+  config.loggers = [Hubbado::Log::StderrLogger]
   config.level = :debug
 end
 ```
