@@ -1,0 +1,110 @@
+require_relative 'automated_init'
+
+require 'hubbado/log/stderr_logger'
+require 'stringio'
+
+# What a person watching a run sees. A tool whose diagnostics go somewhere else — onto a card, or
+# into an envelope on stdout — says nothing at all on a terminal without this, so a wait for a paid
+# model call is a terminal saying nothing for as long as the call takes.
+context "StderrLogger" do
+  subject = Log::Controls::Subject.example
+  message = Log::Controls::Message.example
+
+  # A stack that is recognisably one, and recognisably not anything else in the output.
+  stacktrace = "lib/scanning.rb:14:in 'sweep'\nlib/cli.rb:3:in 'call'"
+
+  def self.printed(severity, msg, data = nil, stacktrace = nil)
+    io = StringIO.new
+
+    Log::StderrLogger.new(io: io).log(
+      Log::Controls::Subject.example, severity, msg, data, stacktrace
+    )
+
+    io.string
+  end
+
+  context "The line itself" do
+    printed = printed(:warn, message)
+
+    test "Names the severity, the subject and what happened" do
+      assert printed == "WARN #{subject}: #{message}\n"
+    end
+  end
+
+  context "A line carrying nothing" do
+    printed = printed(:info, message)
+
+    # Data prints on its own line, and a nil printed rather than skipped would put the word "nil"
+    # under every line that carried nothing — which is most of them.
+    test "Prints one line, not a trailing nil" do
+      refute printed.include?("nil")
+    end
+  end
+
+  context "A line carrying data" do
+    data = Log::Controls::Data.example
+
+    printed = printed(:info, message, data)
+
+    test "Prints the data below the line it belongs to" do
+      assert printed.include?(data.inspect)
+    end
+  end
+
+  # The logger sets the stacktrace to the exception's own full_message, so the two arguments carry
+  # the same string and a handler honouring both would print the backtrace twice.
+  context "A line carrying an exception" do
+    exception = Log::Controls::Exception.example
+
+    printed = printed(:error, message, exception, exception.full_message)
+
+    test "Prints the backtrace, which is the part stderr is worth reading for" do
+      assert printed.include?(exception.full_message)
+    end
+
+    test "Prints it once" do
+      assert printed.scan(exception.full_message).length == 1
+    end
+  end
+
+  # An error is logged just prior to raising, so it is a failure somebody has to find, and the
+  # line alone does not say where it came from.
+  context "An error carrying no exception" do
+    printed = printed(:error, message, nil, stacktrace)
+
+    test "Prints the stacktrace the logger synthesised" do
+      assert printed.include?(stacktrace)
+    end
+  end
+
+  # The logger synthesises a caller stack for warn as well. A warning is a condition to examine
+  # rather than a failure to trace, and its message already names the field and value — so thirty
+  # lines of Ruby stack under every warning in a sweep is the log made unreadable to solve a
+  # problem stderr does not have.
+  context "A warning carrying no exception" do
+    printed = printed(:warn, message, nil, stacktrace)
+
+    test "Prints no stacktrace" do
+      refute printed.include?(stacktrace)
+    end
+  end
+
+  # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler
+  # itself with no arguments. An initialize that grew a required one would fail at process start.
+  context "Built the way the log system builds it" do
+    captured = StringIO.new
+    original = $stderr
+
+    begin
+      $stderr = captured
+
+      Log::StderrLogger.new.log(subject, :warn, message)
+    ensure
+      $stderr = original
+    end
+
+    test "Writes to $stderr" do
+      assert captured.string == "WARN #{subject}: #{message}\n"
+    end
+  end
+end
