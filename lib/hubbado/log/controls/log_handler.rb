@@ -20,7 +20,7 @@ module Hubbado
           end
 
           new.tap do |handler|
-            instance.logger = Logger.new(logger.subject, [handler], level: level, tags: tags)
+            instance.logger = Log::Logger.new(logger.subject, [handler], level: level, tags: tags)
           end
         end
 
@@ -28,7 +28,7 @@ module Hubbado
         def self.logger(subject = Subject.example, level: :trace, tags: Tags::ALL)
           handler = new
 
-          [handler, Logger.new(subject, [handler], level: level, tags: tags)]
+          [handler, Log::Logger.new(subject, [handler], level: level, tags: tags)]
         end
 
         def log(subject, severity, message, data = nil, stacktrace = nil)

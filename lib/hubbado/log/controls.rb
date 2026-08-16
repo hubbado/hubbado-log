@@ -4,3 +4,4 @@ require_relative 'controls/message'
 require_relative 'controls/subject'
 
 require_relative 'controls/log_handler'
+require_relative 'controls/logger'

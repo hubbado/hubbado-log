@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.4.0 - 2026-08-16]
+## Added
+- A substitute for a logger. `Controls::Logger.example` returns one, and a spec
+  assigns it where a class's logger goes:
+
+  ```ruby
+  instance.logger = Hubbado::Log::Controls::Logger.example
+
+  instance.()
+
+  assert instance.logger.logged?(:error)
+  ```
+
+  It answers `logged?` with or without a severity and `messages` with or without
+  one, each message carrying its `severity`, `message` and `data`. It records
+  what it was told rather than writing, so no handler is involved and neither the
+  level nor the tag list decides what a spec can read back.
+
+  A severity reaches a logger two ways — as the generated method, or as `#log`'s
+  first argument — and both answer the same question, compared as symbols.
+
+- `evt-subst_attr` as a runtime dependency. The substitute is a mimic of `Logger`
+  extended with `Logger::Substitute`, so it answers `is_a?(Logger)` for a class
+  that checks, and gains any method `Logger` gains.
+
+## Deprecated
+- `Controls::LogHandler` as the way a consumer reads back what a class logged.
+  It builds a real `Logger` and then passes `level: :trace` and `tags: Tags::ALL`
+  to switch off the filtering it just built — which is a substitute, reached the
+  long way round. Use `Controls::Logger.example`. The handler control stays for
+  what it is good at: specs where a handler receiving, or not receiving, a
+  message is the subject, as `'A message the filter left out'` is.
+
+## Changed
+- `Controls::LogHandler` names `Log::Logger` where it said `Logger`. With
+  `Controls::Logger` defined, a bare `Logger` inside `Controls` resolves to the
+  control rather than to the class.
+
+## Compatibility
+Nothing that exists breaks. `Controls::LogHandler` keeps `.attach`, `.logger`,
+`messages`, `logged?`, `reset` and the attributes, unchanged.
+
 # [1.3.0 - 2026-08-15]
 ## Added
 - Tags, a second filtering axis beside the level. A message names its concern

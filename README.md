@@ -111,6 +111,57 @@ knowing before adopting tags:
 list decides for both, and an application whose messages are all untagged goes silent unless the
 list contains `_untagged`.
 
+## Reading back what a class logged
+
+A spec assigns a substitute where the class's logger goes, and then asks what the class said:
+
+```ruby
+require 'hubbado/log/controls'
+
+instance.logger = Hubbado::Log::Controls::Logger.example
+
+instance.()
+
+assert instance.logger.logged?(:error)
+```
+
+For a class handed a logger rather than carrying one — the shape a CLI usually takes — it is the
+same object, passed in:
+
+```ruby
+logger = Hubbado::Log::Controls::Logger.example
+
+CLI.run(argv, logger: logger)
+
+assert logger.logged?(:error)
+```
+
+It records what it was told rather than writing, so no handler is involved and neither the
+configured level nor `LOG_TAGS` decides what can be read back.
+
+| Call | Answers |
+|---|---|
+| `logged?` | whether anything was written at all |
+| `logged?(:warn)` | whether anything was written at that severity |
+| `messages` | every message, in order |
+| `messages(:warn)` | only those written at that severity |
+
+A message carries its `severity`, `message` and `data`. A severity reaches a logger two ways —
+`logger.warn('…')` names it as the method, `logger.log(:warn, '…')` as an argument — and both
+answer the same question, compared as symbols.
+
+The substitute is a mimic of `Logger`, so it answers `is_a?(Hubbado::Log::Logger)` for a class
+that checks, and gains any method `Logger` gains.
+
+Prefer `logged?` to reaching into `messages` where it will do. That a failure was reported is
+usually the contract; the wording of the line usually is not.
+
+### Testing a handler
+
+`Controls::LogHandler` is for specs where a handler receiving — or not receiving — a message is
+itself the subject, which in practice means this gem's own tests of level and tag filtering. A
+consumer asserting that its class logged something wants the substitute above.
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
