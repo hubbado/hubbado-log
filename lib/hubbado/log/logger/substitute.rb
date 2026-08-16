@@ -4,7 +4,7 @@ module Hubbado
       # What a logger was told rather than what it wrote. Extended onto a mimic of Logger, so a
       # class under test is handed something that answers as a logger and keeps what it was given.
       module Substitute
-        Line = Data.define(:severity, :message, :data)
+        Entry = Data.define(:severity, :message, :data)
 
         # Everything about what a class said, in order. Named with a severity, only what it said
         # at that one.
@@ -13,11 +13,11 @@ module Hubbado
         # methods, or as #log's first argument. Both are compared as symbols, because #log takes
         # a String as readily and passes on what it was given.
         def logged(severity = nil)
-          lines = invocations.map { |invocation| line(invocation) }
+          entries = invocations.map { |invocation| entry(invocation) }
 
-          return lines if severity.nil?
+          return entries if severity.nil?
 
-          lines.select { |written| written.severity == severity.to_s.to_sym }
+          entries.select { |entry| entry.severity == severity.to_s.to_sym }
         end
 
         # What a class said, where #logged is everything about it.
@@ -29,10 +29,10 @@ module Hubbado
 
         private
 
-        def line(invocation)
+        def entry(invocation)
           arguments = invocation.arguments
 
-          Line.new(
+          Entry.new(
             severity: severity(invocation).to_s.to_sym,
             message: arguments[:msg],
             data: arguments[:data]

@@ -147,7 +147,7 @@ Three questions, each taking an optional severity:
 | `messages` / `messages(:warn)` | what it said — the message strings, in order |
 | `logged` / `logged(:warn)` | everything about what it said |
 
-`logged` answers with lines carrying `severity`, `message` and `data`, for the assertion that
+`logged` answers with entries carrying `severity`, `message` and `data`, for the assertion that
 needs more than the text:
 
 ```ruby
