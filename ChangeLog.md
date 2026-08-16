@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.5.0 - 2026-08-16]
+## Added
+- A stderr handler, which four downstream projects had each hand-rolled. The
+  copies differed only in the module name around them, and three of the four
+  had no spec at all, so a regression printing `nil` for a data-less message
+  shipped green in three places. They can delete their copy whenever it suits
+  them.
+
+  ```ruby
+  require "hubbado/log/stderr_logger"
+
+  Hubbado::Log.configuration do |config|
+    config.loggers = [Hubbado::Log::StderrLogger]
+  end
+  ```
+
+  It is not required by `hubbado/log`. Which handlers exist is the process's to
+  decide, and a consumer asks for this one the same way it already asks for
+  `hubbado/log/controls`.
+
+  This gem otherwise ships no handlers, because what a handler writes to is the
+  application's — a Rails logger, a Rollbar token. `$stderr` is owned by nobody,
+  so this is the one handler with no application to belong to.
+
+  It also stops discarding the stacktrace, which every copy did. A stacktrace
+  prints at `error` and above, and only when the data is not an exception: for
+  an exception the stacktrace is that exception's own `full_message`, already
+  printed from the data, so honouring both would print the backtrace twice. A
+  `warn` stays one line — it is a condition to examine rather than a failure to
+  trace, and a sweep that warns per row would otherwise bury itself in Ruby
+  stack.
+
 # [1.4.1 - 2026-08-16]
 ## Fixed
 - A subclass of `Hubbado::Log` can be used as a dependency. It answered `nil`
