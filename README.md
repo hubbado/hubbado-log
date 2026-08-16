@@ -18,6 +18,36 @@ Or install it yourself as:
 
     $ gem install hubbado-log
 
+## A class's own logger
+
+A class that includes the dependency module gets a `logger` writing under its own name:
+
+```ruby
+class MyService
+  include Hubbado::Log::Dependency
+
+  def call
+    logger.info('Did the thing')
+  end
+end
+```
+
+A subclass carries a dependency module of its own, so a library or a component can name where
+its classes take their logger from:
+
+```ruby
+module Messaging
+  class Log < Hubbado::Log; end
+end
+
+class Handler
+  include Messaging::Log::Dependency
+end
+```
+
+Either way the logger writes through the handlers the process was configured with, at the level
+and tags it was configured for.
+
 ## Level
 
 A message below the level reaches no handler.

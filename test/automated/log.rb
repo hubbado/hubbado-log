@@ -39,4 +39,26 @@ context "Log" do
       assert handler.data.nil?
     end
   end
+
+  # A block is free to add to the list it is handed rather than replace it, so what a handler
+  # was told before the change is not what the process reads back after it.
+  context 'Reconfiguring' do
+    Hubbado::Log.configuration do |config|
+      config.loggers = [Log::Controls::LogHandler]
+    end
+
+    built = Hubbado::Log.loggers.first
+
+    Hubbado::Log.configuration do |config|
+      config.loggers << Log::Controls::LogHandler
+    end
+
+    test 'Builds the handlers again' do
+      refute Hubbado::Log.loggers.first.equal?(built)
+    end
+
+    Hubbado::Log.configuration do |config|
+      config.loggers = [Log::Controls::LogHandler]
+    end
+  end
 end

@@ -11,22 +11,16 @@ module Hubbado
     LEVEL_VARIABLE = "LOG_LEVEL".freeze
     TAGS_VARIABLE = "LOG_TAGS".freeze
 
-    # The one place the environment is read. A command names its level and tags here or not at
-    # all, and everything downstream is handed the value rather than the variable.
-    @config = Configuration.new(level: ENV[LEVEL_VARIABLE], tags: ENV[TAGS_VARIABLE])
-
     class << self
-      attr_reader :config
+      # Held by the configuration itself rather than here, because a class-level instance
+      # variable is not inherited: a subclass asking this class would answer nil.
+      def config = Configuration.instance
 
-      def configuration
-        yield @config
-
-        @loggers = nil
+      def configuration(&block)
+        config.change(&block)
       end
 
-      def loggers
-        @loggers ||= config.loggers.map(&:new)
-      end
+      def loggers = config.log_handlers
 
       def logger
         @logger = Logger.new('', loggers)
