@@ -48,13 +48,143 @@ end
 Either way the logger writes through the handlers the process was configured with, at the level
 and tags it was configured for.
 
+## Handlers
+
+A handler is what a log line is finally written *to*. The process names them, and the log system
+builds each one itself with no arguments:
+
+```ruby
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::StderrLogger]
+end
+```
+
+Handlers mostly belong to the application rather than to this gem, because what they write to is
+the application's — a Rails logger, a Rollbar token. Write one by subclassing
+`Hubbado::Log::LogHandler` and implementing `log`:
+
+```ruby
+class MyHandler < Hubbado::Log::LogHandler
+  def log(subject, severity, message, data = nil, stacktrace = nil)
+    ...
+  end
+end
+```
+
+`data` is whatever the call site passed as the second argument, and is an `Exception` when it
+logged one. `stacktrace` is the exception's `full_message` in that case, and otherwise the caller
+stack, synthesised for `warn`, `error`, `fatal` and `unknown` only.
+
+### `Hubbado::Log::StderrLogger`
+
+For a command-line tool, where the log is a person watching a run. It is not loaded by
+`require 'hubbado/log'` — ask for it:
+
+```ruby
+require 'hubbado/log/stderr_logger'
+```
+
+It prints the severity, the subject and the message on one line, and anything the line carried
+below it:
+
+    WARN Scanning::Sweep: rec_1 skipped, no rate
+    ERROR Scanning::Sweep: rec_2 refused
+    /app/lib/scanning/sweep.rb:41:in 'post': HTTP 400 (RequestError)
+      from /app/lib/scanning/sweep.rb:12:in 'call'
+
+A stacktrace prints at `error` and above, and only when the data is not an exception — an
+exception already prints its own backtrace, so honouring both would print it twice. A `warn`
+stays one line: it is a condition to examine rather than a failure to trace, and a sweep that
+warns per row would otherwise bury itself in Ruby stack.
+
+Pass `io:` to write somewhere else, which is mainly how a spec reads it back:
+
+```ruby
+Hubbado::Log::StderrLogger.new(io: StringIO.new)
+```
+
+### `Hubbado::Log::RailsLogger`
+
+Writes into a Rails application's own log.
+
+```ruby
+require "hubbado/log/rails_logger"
+
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::RailsLogger]
+end
+```
+
+Rails is not a dependency of this gem. The constant is read lazily, and the only place a handler
+is ever registered is an environment file, where Rails is loaded by definition.
+
+The subject and message go on one line, and the data and stacktrace on lines below it, all at the
+severity of the line. An exception is one line rather than two — its backtrace already carries the
+message that its `inspect` would repeat. `trace` is written as `debug`, because Rails' logger has
+no method below it, and a handler passing `trace` straight through raises `NoMethodError` on the
+first trace line it is handed.
+
+Unlike the stderr handler, the stacktrace is written at every severity. A Rails log is read after
+the fact, and by machine as often as by a person, so there is nothing to keep readable by
+withholding frames.
+
+Pass `rails_logger:` to write somewhere else, which is mainly how a spec reads it back. Left
+unset, `Rails.logger` is read on every line rather than held, so a handler built before Rails
+replaced its logger still writes to the current one.
+
+### `Hubbado::Log::NotifyRollbar`
+
+Forwards a line worth an incident to Rollbar: `warn` as a warning, `error`, `fatal` and
+`unknown` as errors, and anything below a warning not at all.
+
+**Rollbar is not a dependency of this gem.** It is a development dependency, so nothing about
+installing `hubbado-log` installs Rollbar. A consumer that wants this handler puts `rollbar` in
+its own Gemfile and requires the handler itself:
+
+```ruby
+require "hubbado/log/notify_rollbar"
+
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::StderrLogger, Hubbado::Log::NotifyRollbar]
+end
+```
+
+The require raises `LoadError` at boot if Rollbar is absent, which is deliberate — the
+alternative is a `NameError` raised inside `log`, at the moment something is trying to report a
+failure, replacing the error being reported with a worse one.
+
+The handler configures nothing. Access token, environment and scrubbing are Rollbar's own
+`Rollbar.configure`, which the application owns.
+
+Everything the line carried travels as Rollbar's extra data, in **one** hash — Rollbar scans its
+arguments by type and keeps the last hash it is given, so a second one would silently displace
+the first:
+
+| The line has | Reaches the item as |
+|---|---|
+| an exception as its data | the exception itself, which Rollbar groups and traces on |
+| a hash as its data | those keys, stringified |
+| anything else as its data | a `data` key holding its `inspect` |
+| — | a `subject` key naming the class that logged it |
+| a stacktrace, with no exception | a `stacktrace` key |
+
+The handler's own keys are merged last, so a line cannot tell an item it came from a different
+class. A stacktrace is sent only when there is no exception, because Rollbar reads the backtrace
+off an exception itself.
+
+The message is sent as a String whatever it was — Rollbar matches its title by type, so anything
+else would leave the item with no title at all.
+
+Pass `notifier:` to record what was sent rather than send it, which is mainly how a spec reads it
+back.
+
 ## Level
 
 A message below the level reaches no handler.
 
 ```ruby
 Hubbado::Log.configuration do |config|
-  config.loggers = [MyStderrHandler]
+  config.loggers = [Hubbado::Log::StderrLogger]
   config.level = :debug
 end
 ```

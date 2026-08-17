@@ -7,11 +7,7 @@ context "Recorded messages" do
   message = Log::Controls::Message.example
 
   context 'A handler attached to a class' do
-    receiver = Class.new do
-      def self.name = 'Receiver'
-
-      include Log::Dependency
-    end.new
+    receiver = Log::Controls::Receiver.example
 
     handler = Log::Controls::LogHandler.attach(receiver)
 
@@ -24,12 +20,12 @@ context "Recorded messages" do
     end
 
     test 'Keeps the subject the class had' do
-      assert handler.subject == 'Receiver'
+      assert handler.subject == Log::Controls::Receiver.name
     end
   end
 
   context 'A handler attached to a class carrying no logger yet' do
-    receiver = Class.new { attr_accessor :logger }.new
+    receiver = Log::Controls::Receiver.without_logger
 
     test 'Says so rather than failing on nil' do
       assert_raises(ArgumentError) do

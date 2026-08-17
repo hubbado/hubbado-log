@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.5.0 - 2026-08-16]
+## Added
+- Three handlers, replacing eight hand-rolled copies across four projects and
+  two applications. Each is behind its own require; `require "hubbado/log"`
+  loads none of them.
+
+  ```ruby
+  require "hubbado/log/stderr_logger"
+  require "hubbado/log/notify_rollbar"
+
+  Hubbado::Log.configuration do |config|
+    config.loggers = [Hubbado::Log::StderrLogger, Hubbado::Log::NotifyRollbar]
+  end
+  ```
+
+  | Handler | Writes to | Needs |
+  |---|---|---|
+  | `StderrLogger` | `$stderr` | nothing |
+  | `RailsLogger` | `Rails.logger` | Rails, already loaded wherever a handler is registered |
+  | `NotifyRollbar` | `Rollbar` | `rollbar` in the consumer's own Gemfile |
+
+  Neither Rails nor Rollbar is a dependency of this gem, so installing it
+  installs neither. `notify_rollbar` requires `rollbar` at the top of the file,
+  making an absent gem a `LoadError` at boot rather than a `NameError` raised
+  while a failure is being reported.
+
+  Every copy discarded the `stacktrace` argument, and the Rollbar ones
+  discarded more:
+
+  | | Was | Is now |
+  |---|---|---|
+  | `StderrLogger`, an `error` carrying no exception | no stacktrace | prints it. A `warn` stays one line, and an exception's backtrace is never printed twice |
+  | `RailsLogger`, a `trace` line | `NoMethodError` in one of the two copies | written as `debug` |
+  | `NotifyRollbar`, the subject | dropped | a `subject` key, merged last so a line cannot claim another class |
+  | `NotifyRollbar`, a stacktrace with no exception | dropped | a `stacktrace` key |
+  | `NotifyRollbar`, data that is not a hash or exception | dropped | a `data` key holding its `inspect` |
+
+  Rollbar keeps the last hash it is handed and ignores anything that is not a
+  String, an Exception or a Hash, so `NotifyRollbar` merges everything into one
+  hash — built fresh per call, because Rollbar deletes a key from the hash it
+  is given.
+
+- Controls for what a handler spec stands in for: `Controls::Rollbar`,
+  `Controls::RailsLogger`, `Controls::Receiver` and `Controls::Stacktrace`.
+
+  `Controls::Rollbar` reads a notification back the way Rollbar reads its
+  arguments, keeping the last hash — so a handler sending two would pass
+  against a merging control and lose data against the real thing.
+  `Controls::RailsLogger` does not answer to `trace`, so a handler passing it
+  straight through raises here as it would in Rails.
+
 # [1.4.1 - 2026-08-16]
 ## Fixed
 - A subclass of `Hubbado::Log` can be used as a dependency. It answered `nil`
