@@ -103,6 +103,32 @@ Pass `io:` to write somewhere else, which is mainly how a spec reads it back:
 Hubbado::Log::StderrLogger.new(io: StringIO.new)
 ```
 
+### `Hubbado::Log::RailsLogger`
+
+Writes into a Rails application's own log.
+
+```ruby
+require "hubbado/log/rails_logger"
+
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::RailsLogger]
+end
+```
+
+Rails is not a dependency of this gem. The constant is read lazily, and the only place a handler
+is ever registered is an environment file, where Rails is loaded by definition.
+
+The subject and message go on one line, and the data and stacktrace on lines below it, all at the
+severity of the line. `trace` is written as `debug`, because Rails' logger has no method below
+it — a handler passing `trace` straight through raises `NoMethodError` on the first trace line it
+is handed.
+
+Unlike the stderr handler, the stacktrace is written at every severity. A Rails log is read after
+the fact, and by machine as often as by a person, so there is nothing to keep readable by
+withholding frames.
+
+Pass `rails_logger:` to write somewhere else, which is mainly how a spec reads it back.
+
 ### `Hubbado::Log::NotifyRollbar`
 
 Forwards a line worth an incident to Rollbar: `warn` as a warning, `error`, `fatal` and

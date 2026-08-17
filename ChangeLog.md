@@ -36,6 +36,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   trace, and a sweep that warns per row would otherwise bury itself in Ruby
   stack.
 
+- A Rails handler, which two applications had hand-rolled and where the copies
+  had already drifted into a bug. Rails' logger has no method below `debug`, so
+  a copy passing the gem's `trace` severity straight through raises
+  `NoMethodError` on the first trace line it is handed. One copy mapped it, the
+  other did not. The gem's maps it.
+
+  ```ruby
+  require "hubbado/log/rails_logger"
+
+  Hubbado::Log.configuration do |config|
+    config.loggers = [Hubbado::Log::RailsLogger]
+  end
+  ```
+
+  Rails is not a dependency of this gem. The constant is read lazily, and a
+  handler is only ever registered from an environment file, where Rails is
+  loaded by definition.
+
 - A Rollbar handler, which two Rails applications had hand-rolled identically.
 
   ```ruby
