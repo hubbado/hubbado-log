@@ -36,6 +36,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   trace, and a sweep that warns per row would otherwise bury itself in Ruby
   stack.
 
+- Controls for the things a handler spec stands in for, alongside the existing
+  `Message`, `Subject`, `Data` and `Exception`:
+
+  | Control | Stands in for |
+  |---|---|
+  | `Controls::Rollbar` | the `Rollbar` module, recording rather than sending |
+  | `Controls::RailsLogger` | `Rails.logger`, recording the lines it was asked to write |
+  | `Controls::Receiver` | a class that takes a logger, which the handler controls attach to |
+  | `Controls::Stacktrace` | what the logger synthesises for a line carrying no exception |
+
+  `Controls::Rollbar` reads a notification back the way Rollbar reads its own
+  arguments — by type, keeping the **last** hash and discarding any earlier
+  one. A control that merged them instead would let a handler sending two
+  hashes pass against the control and lose data against the real thing.
+
+  `Controls::RailsLogger` deliberately does not answer to `trace`, which Rails
+  has no method for, so a handler passing the gem's lowest severity straight
+  through raises here exactly as it would in a Rails application.
+
 - A Rails handler, which two applications had hand-rolled and where the copies
   had already drifted into a bug. Rails' logger has no method below `debug`, so
   a copy passing the gem's `trace` severity straight through raises
