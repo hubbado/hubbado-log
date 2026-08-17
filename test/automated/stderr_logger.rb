@@ -67,6 +67,18 @@ context "StderrLogger" do
     end
   end
 
+  # A handler called directly rather than through the logger has no rendered stacktrace to reuse,
+  # and the backtrace is the part stderr is worth reading for.
+  context "An exception with no stacktrace alongside it" do
+    exception = Log::Controls::Exception.example
+
+    printed = printed(:error, message, exception)
+
+    test "renders the backtrace itself" do
+      assert printed.include?(exception.full_message)
+    end
+  end
+
   # An error is logged just prior to raising, so it is a failure somebody has to find, and the
   # line alone does not say where it came from.
   context "An error carrying no exception" do

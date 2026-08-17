@@ -12,27 +12,12 @@ module Hubbado
 
         def self.example = new
 
+        # Each entry is the severity it was written at and the text of it.
         def lines = @lines ||= []
 
         SEVERITIES.each do |severity|
           define_method(severity) { |line| lines << [severity, line] }
         end
-
-        # Without a severity, whether anything was written at all.
-        def wrote?(severity = nil)
-          return !lines.empty? if severity.nil?
-
-          lines.any? { |written, _| written == severity.to_s.to_sym }
-        end
-
-        def reset
-          @lines = []
-        end
-
-        # The most recent line, as the severity it was written at and the text of it.
-        def severity = lines.last&.first
-
-        def line = lines.last&.last
       end
     end
   end

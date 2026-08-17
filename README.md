@@ -77,8 +77,8 @@ stack, synthesised for `warn`, `error`, `fatal` and `unknown` only.
 
 ### `Hubbado::Log::StderrLogger`
 
-The one handler this gem ships, because `$stderr` is owned by nobody and every command-line tool
-wants it. It is not loaded by `require 'hubbado/log'` — ask for it:
+For a command-line tool, where the log is a person watching a run. It is not loaded by
+`require 'hubbado/log'` — ask for it:
 
 ```ruby
 require 'hubbado/log/stderr_logger'
@@ -119,15 +119,18 @@ Rails is not a dependency of this gem. The constant is read lazily, and the only
 is ever registered is an environment file, where Rails is loaded by definition.
 
 The subject and message go on one line, and the data and stacktrace on lines below it, all at the
-severity of the line. `trace` is written as `debug`, because Rails' logger has no method below
-it — a handler passing `trace` straight through raises `NoMethodError` on the first trace line it
-is handed.
+severity of the line. An exception is one line rather than two — its backtrace already carries the
+message that its `inspect` would repeat. `trace` is written as `debug`, because Rails' logger has
+no method below it, and a handler passing `trace` straight through raises `NoMethodError` on the
+first trace line it is handed.
 
 Unlike the stderr handler, the stacktrace is written at every severity. A Rails log is read after
 the fact, and by machine as often as by a person, so there is nothing to keep readable by
 withholding frames.
 
-Pass `rails_logger:` to write somewhere else, which is mainly how a spec reads it back.
+Pass `rails_logger:` to write somewhere else, which is mainly how a spec reads it back. Left
+unset, `Rails.logger` is read on every line rather than held, so a handler built before Rails
+replaced its logger still writes to the current one.
 
 ### `Hubbado::Log::NotifyRollbar`
 
@@ -168,6 +171,12 @@ the first:
 The handler's own keys are merged last, so a line cannot tell an item it came from a different
 class. A stacktrace is sent only when there is no exception, because Rollbar reads the backtrace
 off an exception itself.
+
+The message is sent as a String whatever it was — Rollbar matches its title by type, so anything
+else would leave the item with no title at all.
+
+Pass `notifier:` to record what was sent rather than send it, which is mainly how a spec reads it
+back.
 
 ## Level
 

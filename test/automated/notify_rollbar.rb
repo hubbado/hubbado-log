@@ -2,8 +2,7 @@ require_relative 'automated_init'
 
 require 'hubbado/log/notify_rollbar'
 
-# What reaches Rollbar, and what a person triaging an item is given to work with. Two projects
-# had hand-rolled this identically, and both dropped the subject and the stacktrace.
+# What reaches Rollbar, and what a person triaging an item is given to work with.
 context "NotifyRollbar" do
   subject = Log::Controls::Subject.example
   message = Log::Controls::Message.example
@@ -13,9 +12,8 @@ context "NotifyRollbar" do
   def self.notifying(severity, msg, data = nil, stacktrace = nil)
     notifier = Log::Controls::Rollbar.example
 
-    handler = Log::NotifyRollbar.new
-    handler.notifier = notifier
-    handler.log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
+    Log::NotifyRollbar.new(notifier: notifier)
+      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
 
     notifier
   end
@@ -122,6 +120,16 @@ context "NotifyRollbar" do
     end
   end
 
+  # Rollbar matches its title by type, so a message that is not a String is ignored and the item
+  # arrives with no title at all — nothing for a person to read in the incident list.
+  context "A message that is not a string" do
+    notifier = notifying(:warn, :card_skipped)
+
+    test "still titles the item" do
+      assert notifier.message == "card_skipped"
+    end
+  end
+
   context "The line's data is left as the caller passed it" do
     data = { "record_id" => "rec_1" }
 
@@ -134,11 +142,33 @@ context "NotifyRollbar" do
     end
   end
 
+  # Rollbar is a real loaded module here, so reading the default means standing a control in its
+  # place rather than sending anything. Restored in an ensure: every spec file in a run shares
+  # one process, so a swapped ::Rollbar left behind would be the one they all see.
+  def self.with_rollbar(notifier)
+    real = Rollbar
+
+    Object.send(:remove_const, :Rollbar)
+    Object.const_set(:Rollbar, notifier)
+
+    yield
+  ensure
+    Object.send(:remove_const, :Rollbar)
+    Object.const_set(:Rollbar, real)
+  end
+
   # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler
   # itself with no arguments.
   context "Built the way the log system builds it" do
+    notifier = Log::Controls::Rollbar.example
+
+    with_rollbar(notifier) do
+      Log::NotifyRollbar.new.log(subject, :error, message)
+    end
+
     test "takes none, and notifies Rollbar itself" do
-      assert Log::NotifyRollbar.new.notifier.equal?(Rollbar)
+      assert notifier.level == :error
+      assert notifier.message == message
     end
   end
 end

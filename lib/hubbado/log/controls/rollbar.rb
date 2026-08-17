@@ -5,20 +5,17 @@ module Hubbado
       # Every level Rollbar answers to is defined, so a handler notifying at a level it should
       # have stayed quiet at is recorded and asserted against rather than raising.
       class Rollbar
-        # Rollbar takes its arguments positionally and untyped, scanning them for a String, an
-        # Exception and a Hash. Reading them back the same way is the point of this control: a
-        # notification is asserted on for what Rollbar would make of it, not for the order a
-        # handler happened to pass things in.
+        # Rollbar takes its arguments positionally and untyped, assigning each one it recognises
+        # over any earlier one of the same kind. So every reader here takes the **last** match,
+        # not the first: a notification is asserted on for what Rollbar would make of it, and a
+        # handler passing two of anything must lose the same one here that it loses there.
         Notification = Struct.new(:level, :arguments) do
-          def message = arguments.find { |argument| argument.is_a?(String) }
+          def message = arguments.grep(String).last
 
           # `::Exception`, not `Exception` — this module has a control of that name, and a bare
           # constant here resolves to it and matches nothing.
-          def exception = arguments.find { |argument| argument.is_a?(::Exception) }
+          def exception = arguments.grep(::Exception).last
 
-          # The **last** hash, discarding any earlier one, because that is what Rollbar does.
-          # A handler passing two would read as correct against a control that merged them, and
-          # lose a hash against the real thing.
           def extra = arguments.grep(Hash).last
 
           def hashes = arguments.grep(Hash).length
@@ -40,10 +37,6 @@ module Hubbado
           return !notifications.empty? if level.nil?
 
           notifications.any? { |notification| notification.level == level.to_s.to_sym }
-        end
-
-        def reset
-          @notifications = []
         end
 
         # The most recent notification. Derived rather than assigned alongside `notifications`,

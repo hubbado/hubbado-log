@@ -4,32 +4,39 @@ require_relative '../log'
 
 module Hubbado
   class Log
-    # Forwards a log line worth an incident to Rollbar. Not required by `hubbado/log`, and
-    # Rollbar is a development dependency of this gem rather than a runtime one, so a consumer
-    # that never asks for this handler never installs it. One that does asks for Rollbar in its
-    # own Gemfile, and the require above says so at boot rather than at the moment an error is
-    # being reported.
+    # Forwards a log line worth an incident to Rollbar.
     class NotifyRollbar < LogHandler
       # Rollbar's own levels. It has none above error, so the two severities above `warn` share
       # it, and anything below a warning is running commentary that reaches the handlers which
       # print rather than this one.
       LEVELS = { warn: :warn, error: :error, fatal: :error, unknown: :error }.freeze
 
-      # Assigned rather than built, so a spec can read what was sent without sending it.
-      attr_writer :notifier
+      def initialize(notifier: nil)
+        super()
 
-      def notifier = @notifier ||= ::Rollbar
+        @notifier = notifier
+      end
 
       def log(subject, severity, message, data = nil, stacktrace = nil)
         level = LEVELS[severity.to_sym]
         return if level.nil?
 
-        error = data if data.is_a?(Exception)
+        error = data if data.is_a?(::Exception)
 
-        notifier.public_send(level, *[error, message, extra(subject, data, stacktrace)].compact)
+        notifier.public_send(
+          level, *[error, title(message), extra(subject, data, stacktrace)].compact
+        )
       end
 
       private
+
+      # Read rather than stored, so a process that reconfigures Rollbar after the log system
+      # built its handlers is notified through what it configured.
+      def notifier = @notifier || ::Rollbar
+
+      # Rollbar matches its title by type: a message that is not a String is ignored, and the
+      # item arrives with no title at all rather than with a bad one.
+      def title(message) = message.to_s
 
       # One hash, never two. Rollbar scans its arguments by type and keeps the last hash it
       # finds, discarding any earlier one — so a line's own data and the fields added here have
