@@ -30,4 +30,8 @@ Gem::Specification.new do |s|
   s.add_development_dependency "debug"
   s.add_development_dependency "hubbado-style"
   s.add_development_dependency "test_bench"
+
+  # Development only, deliberately. `hubbado/log/notify_rollbar` requires it, and nothing else
+  # in the gem does — so a consumer that never asks for that handler never installs Rollbar.
+  s.add_development_dependency "rollbar"
 end

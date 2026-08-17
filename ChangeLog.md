@@ -36,6 +36,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   trace, and a sweep that warns per row would otherwise bury itself in Ruby
   stack.
 
+- A Rollbar handler, which two Rails applications had hand-rolled identically.
+
+  ```ruby
+  require "hubbado/log/notify_rollbar"
+
+  Hubbado::Log.configuration do |config|
+    config.loggers = [Hubbado::Log::StderrLogger, Hubbado::Log::NotifyRollbar]
+  end
+  ```
+
+  **Rollbar is not a dependency of this gem**, and installing `hubbado-log`
+  does not install it. It is a development dependency, needed only to run this
+  gem's own tests. A consumer that wants the handler puts `rollbar` in its own
+  Gemfile; the handler's `require` raises `LoadError` at boot if it is absent,
+  rather than a `NameError` inside `log` at the moment a failure is being
+  reported.
+
+  Three things the copies got wrong, all from the same cause. Rollbar scans its
+  arguments by type, keeps the **last** hash it is handed, and ignores anything
+  that is not a String, an Exception or a Hash:
+
+  | The line has | Was | Is now |
+  |---|---|---|
+  | a subject | dropped | a `subject` key, merged last so a line cannot claim another class |
+  | a stacktrace, no exception | dropped | a `stacktrace` key |
+  | data that is not a hash or exception | dropped entirely | a `data` key holding its `inspect` |
+
+  Everything travels in one hash for that reason, and it is built fresh per
+  call rather than handed the caller's — Rollbar deletes a key from the hash it
+  is given.
+
 # [1.4.1 - 2026-08-16]
 ## Fixed
 - A subclass of `Hubbado::Log` can be used as a dependency. It answered `nil`

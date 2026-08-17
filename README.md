@@ -103,6 +103,46 @@ Pass `io:` to write somewhere else, which is mainly how a spec reads it back:
 Hubbado::Log::StderrLogger.new(io: StringIO.new)
 ```
 
+### `Hubbado::Log::NotifyRollbar`
+
+Forwards a line worth an incident to Rollbar: `warn` as a warning, `error`, `fatal` and
+`unknown` as errors, and anything below a warning not at all.
+
+**Rollbar is not a dependency of this gem.** It is a development dependency, so nothing about
+installing `hubbado-log` installs Rollbar. A consumer that wants this handler puts `rollbar` in
+its own Gemfile and requires the handler itself:
+
+```ruby
+require "hubbado/log/notify_rollbar"
+
+Hubbado::Log.configuration do |config|
+  config.loggers = [Hubbado::Log::StderrLogger, Hubbado::Log::NotifyRollbar]
+end
+```
+
+The require raises `LoadError` at boot if Rollbar is absent, which is deliberate — the
+alternative is a `NameError` raised inside `log`, at the moment something is trying to report a
+failure, replacing the error being reported with a worse one.
+
+The handler configures nothing. Access token, environment and scrubbing are Rollbar's own
+`Rollbar.configure`, which the application owns.
+
+Everything the line carried travels as Rollbar's extra data, in **one** hash — Rollbar scans its
+arguments by type and keeps the last hash it is given, so a second one would silently displace
+the first:
+
+| The line has | Reaches the item as |
+|---|---|
+| an exception as its data | the exception itself, which Rollbar groups and traces on |
+| a hash as its data | those keys, stringified |
+| anything else as its data | a `data` key holding its `inspect` |
+| — | a `subject` key naming the class that logged it |
+| a stacktrace, with no exception | a `stacktrace` key |
+
+The handler's own keys are merged last, so a line cannot tell an item it came from a different
+class. A stacktrace is sent only when there is no exception, because Rollbar reads the backtrace
+off an exception itself.
+
 ## Level
 
 A message below the level reaches no handler.
