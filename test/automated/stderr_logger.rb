@@ -11,7 +11,7 @@ context "StderrLogger" do
   message = Log::Controls::Message.example
 
   # A stack that is recognisably one, and recognisably not anything else in the output.
-  stacktrace = "lib/scanning.rb:14:in 'sweep'\nlib/cli.rb:3:in 'call'"
+  stacktrace = Log::Controls::Stacktrace.example
 
   def self.printed(severity, msg, data = nil, stacktrace = nil)
     io = StringIO.new

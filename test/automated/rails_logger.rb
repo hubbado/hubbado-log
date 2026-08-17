@@ -15,19 +15,11 @@ context "RailsLogger" do
   subject = Log::Controls::Subject.example
   message = Log::Controls::Message.example
 
-  stacktrace = "lib/scanning.rb:14:in 'sweep'\nlib/cli.rb:3:in 'call'"
+  stacktrace = Log::Controls::Stacktrace.example
 
-  recorder = Class.new do
-    def lines = @lines ||= []
+  def self.written(severity, msg, data = nil, stacktrace = nil)
+    rails_logger = Log::Controls::RailsLogger.example
 
-    # Rails' logger answers a method per severity. Anything it is not asked for is a severity
-    # this handler invented, which is the bug the trace mapping exists to prevent.
-    %i[debug info warn error fatal unknown].each do |severity|
-      define_method(severity) { |line| lines << [severity, line] }
-    end
-  end
-
-  def self.written(severity, msg, data = nil, stacktrace = nil, rails_logger:)
     handler = Log::RailsLogger.new
     handler.rails_logger = rails_logger
     handler.log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
@@ -36,7 +28,7 @@ context "RailsLogger" do
   end
 
   context "The line itself" do
-    lines = written(:warn, message, rails_logger: recorder.new)
+    lines = written(:warn, message)
 
     test "names the class it came from and what happened, at the severity it was written at" do
       assert lines == [[:warn, "#{subject}: #{message}"]]
@@ -46,7 +38,7 @@ context "RailsLogger" do
   context "A line carrying data" do
     data = Log::Controls::Data.example
 
-    lines = written(:info, message, data, rails_logger: recorder.new)
+    lines = written(:info, message, data)
 
     test "writes the data below the line it belongs to, at the same severity" do
       assert lines.length == 2
@@ -55,7 +47,7 @@ context "RailsLogger" do
   end
 
   context "A line carrying a stacktrace" do
-    lines = written(:error, message, nil, stacktrace, rails_logger: recorder.new)
+    lines = written(:error, message, nil, stacktrace)
 
     # Unlike a terminal, a Rails log is read after the fact and by machine as often as by a
     # person, so there is no reason to withhold frames from it.
@@ -65,7 +57,7 @@ context "RailsLogger" do
   end
 
   context "A line carrying neither" do
-    lines = written(:info, message, rails_logger: recorder.new)
+    lines = written(:info, message)
 
     test "writes one line, not a trailing nil" do
       assert lines.length == 1
@@ -76,7 +68,7 @@ context "RailsLogger" do
   # debug, so a copy passing trace straight through raises NoMethodError on the first trace
   # line it is handed.
   context "A trace line, which Rails has no level for" do
-    lines = written(:trace, message, rails_logger: recorder.new)
+    lines = written(:trace, message)
 
     test "is written as debug rather than raising" do
       assert lines == [[:debug, "#{subject}: #{message}"]]
@@ -86,7 +78,7 @@ context "RailsLogger" do
   context "Every other severity" do
     %i[debug info warn error fatal unknown].each do |severity|
       context severity.to_s do
-        lines = written(severity, message, rails_logger: recorder.new)
+        lines = written(severity, message)
 
         test "is written as itself" do
           assert lines.first.first == severity
@@ -98,7 +90,7 @@ context "RailsLogger" do
   # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler
   # itself with no arguments.
   context "Built the way the log system builds it" do
-    rails_logger = recorder.new
+    rails_logger = Log::Controls::RailsLogger.example
     Rails.logger = rails_logger
 
     Log::RailsLogger.new.log(subject, :warn, message)
