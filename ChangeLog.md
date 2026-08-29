@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   writing. `NotifyRollbar` does not ask, so it is reached whatever the settings
   say, and declines anything below `warn` on its own as before.
 
+- A failure written with a String severity is given a stacktrace, as one written
+  with a symbol always was. `#log` validates the severity as a symbol but
+  compared it raw when deciding whether to synthesise a caller stack, so
+  `Hubbado::Log.log('error', msg)` was accepted, logged, and arrived with no
+  stack under it.
+
+  Latent until now — every call site across Hubbado names its severity as a
+  symbol — and worth fixing here because such a message could previously be
+  filtered away entirely. Now that every warning and error reaches Rollbar, it
+  would instead be filed as an item nobody can act on.
+
 ## Added
 - `Hubbado::Log::Display`, which answers whether the operator asked to be shown
   a message. A handler that writes where a person reads asks it; one that

@@ -54,6 +54,30 @@ context "Logger" do
       end
     end
 
+    # #log takes a String as readily as a symbol and passes on what it was given, so the severity
+    # is compared as a symbol wherever it decides anything. Compared raw, a failure written as a
+    # String reaches Rollbar with no stack under it — an item nobody can act on, filed as though
+    # nothing were wrong with it.
+    context 'A severity named as a String' do
+      %w[warn error fatal unknown].each do |severity|
+        context severity do
+          test 'Is given a stacktrace, as the symbol is' do
+            logger.log(severity, message)
+
+            refute handler.stacktrace.nil?
+          end
+        end
+      end
+
+      context 'below the stacktrace severities' do
+        test 'Is given none, as the symbol is' do
+          logger.log('info', message)
+
+          assert handler.stacktrace.nil?
+        end
+      end
+    end
+
     context "Severity methods" do
       Log::SEVERITIES.each_key do |severity|
         context "##{severity}" do

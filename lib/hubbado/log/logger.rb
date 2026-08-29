@@ -23,7 +23,7 @@ module Hubbado
 
         stacktrace = if data.is_a?(Exception)
                        data.full_message
-                     elsif STACKTRACE_SEVERITIES.include?(severity)
+                     elsif STACKTRACE_SEVERITIES.include?(severity.to_sym)
                        format_stacktrace Kernel.caller
                      end
 
