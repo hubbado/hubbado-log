@@ -65,7 +65,9 @@ the application's — a Rails logger, a Rollbar token. Write one by subclassing
 
 ```ruby
 class MyHandler < Hubbado::Log::LogHandler
-  def log(subject, severity, message, data = nil, stacktrace = nil)
+  def log(subject, severity, message, data = nil, stacktrace = nil, tags = [])
+    return unless Hubbado::Log::Display.shows?(severity, tags)
+
     ...
   end
 end
@@ -73,7 +75,11 @@ end
 
 `data` is whatever the call site passed as the second argument, and is an `Exception` when it
 logged one. `stacktrace` is the exception's `full_message` in that case, and otherwise the caller
-stack, synthesised for `warn`, `error`, `fatal` and `unknown` only.
+stack, synthesised for `warn`, `error`, `fatal` and `unknown` only. `tags` is what the message was
+tagged with, as symbols.
+
+**A handler that writes where a person reads asks `Display.shows?` first**, and one that reports
+an incident does not — see [Display and reporting](#display-and-reporting).
 
 ### `Hubbado::Log::StderrLogger`
 
@@ -207,9 +213,6 @@ Levels, lowest first:
 | `error` | Message logged just prior to raising an error |
 | `fatal` | Message recorded, when possible, as the process is terminating due to an error |
 
-A single logger can name its own with
-`Hubbado::Log::Logger.new(subject, handlers, level: :debug)`.
-
 `LOG_LEVEL` is shared with Eventide's log gem, which writes names this gem does not
 know. A name that is not one of `debug`, `info`, `warn`, `error`, `fatal` or
 `unknown` leaves the level at `info` rather than raising.
@@ -250,13 +253,6 @@ Tags compose with the level rather than replacing it: both filters have to pass,
 cannot raise a message above the level and the level cannot rescue one the list leaves out.
 Both decide what is displayed, and neither decides what is reported.
 
-A single logger can name its own list, as it can name its own level, so one component can be
-read without turning up everything around it:
-
-```ruby
-Hubbado::Log::Logger.new(subject, handlers, level: :trace, tags: '_all')
-```
-
 The syntax and its behaviour are Eventide's log gem, copied deliberately so that a string an
 operator writes means the same thing in both codebases. Two consequences of that are worth
 knowing before adopting tags:
@@ -279,20 +275,21 @@ list contains `_untagged`.
 operator narrowing to the step they are debugging is asking to be shown less, not asking for a
 crash elsewhere to go unreported.
 
-Each handler says which it is:
+The logger fans every message out to every handler. A handler that writes where a person reads
+asks whether the operator wanted to be shown it; one that reports does not:
 
 ```ruby
-class MyHandler < Hubbado::Log::LogHandler
-  def displays? = true   # the default — LOG_LEVEL and LOG_TAGS decide what it is given
-end
+Hubbado::Log::Display.shows?(severity, tags)   # => true if LOG_LEVEL and LOG_TAGS both admit it
 ```
 
-`StderrLogger` and `RailsLogger` take the default. `NotifyRollbar` answers `false`: it is reached
-whatever the operator narrowed or quietened to, and declines anything below `warn` itself.
+`StderrLogger` and `RailsLogger` ask. `NotifyRollbar` does not: it is reached whatever the operator
+narrowed or quietened to, and declines anything below `warn` itself.
 
-The logger asks every handler this, so a handler that does not subclass `LogHandler` raises. Tagging
-a `warn` no longer hides it from Rollbar, only from the terminal — and `:*` now means "always
-display", which is what it means in Eventide's log gem.
+**A printing handler that forgets to ask prints everything**, whatever the operator set. That is
+the one thing to remember when writing one.
+
+Tagging a `warn` no longer hides it from Rollbar, only from the terminal — and `:*` now means
+"always display", which is what it means in Eventide's log gem.
 
 ## Reading back what a class logged
 
