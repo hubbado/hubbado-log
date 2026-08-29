@@ -107,9 +107,16 @@ Recorded after the fact, because the two questions above were left open delibera
   does. `Logger` no longer filters at all — it fans out what it is given.
 
   An earlier attempt put a `LogHandler#displays?` predicate on the handler and kept the filtering
-  in `Logger`. It worked and was smaller, but it could not give a handler the message's tags, and
-  Señor Codigo wanted those passed so a handler can use them for its own purposes. That decided
-  it: once tags are on the contract, the handler has everything it needs to ask for itself.
+  in `Logger`. It worked and was smaller. The reason first written down here — that it could not
+  give a handler the message's tags — does not survive scrutiny: the two are orthogonal, and
+  `Logger` could have passed the tags *and* consulted `displays?`. The reasons that do hold:
+
+  - **The failure direction is the loud one.** Forget the `Display.shows?` line in a printing
+    handler and you over-print, which announces itself on the first run. Forget a `displays?`
+    declaration under a filters-by-default predicate and you get silent under-reporting, which is
+    the defect this card exists to remove.
+  - **Rollout.** All twelve consumers already override `log`. Adding a line to a method they
+    override is a smaller and more verifiable edit than restructuring each one.
 
 - **The per-logger `level:` and `tags:` overrides are retired**, which is the AC4 answer. A handler
   reads the process configuration; a logger's own settings cannot reach it without putting the

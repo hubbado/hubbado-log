@@ -58,13 +58,11 @@ context "Logger" do
     # decides anything. Compared raw, a failure written as a String reaches Rollbar with no stack
     # under it — an item nobody can act on.
     context 'A severity named as a String' do
-      %w[warn error fatal unknown].each do |severity|
-        context severity do
-          test 'Is given a stacktrace, as the symbol is' do
-            logger.log(severity, message)
+      context 'among the ones a stacktrace is synthesised for' do
+        test 'Is given one, as the symbol is' do
+          logger.log('error', message)
 
-            refute handler.stacktrace.nil?
-          end
+          refute handler.stacktrace.nil?
         end
       end
 

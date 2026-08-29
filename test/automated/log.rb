@@ -24,14 +24,11 @@ context "Log" do
       config.loggers = [Log::Controls::LogHandler]
     end
 
-    configured = Log.config.tags
-    Log.config.tags = '_all'
     Hubbado::Log.log(:info, 'test', tag: :http)
-    Log.config.tags = configured
 
     handler = Hubbado::Log.loggers.first
 
-    test 'Filters on them' do
+    test 'Reaches the handler with them named' do
       assert handler.logged?
     end
 

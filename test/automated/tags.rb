@@ -4,19 +4,9 @@ require_relative 'automated_init'
 # that is simply frequent can be filtered without being demoted. The list is Eventide's syntax,
 # so an operator meets one vocabulary in both codebases.
 context "Tags" do
-  # Every file in this suite shares the configuration, so the list is put back however it ends.
-  def self.tagged(log_tags)
-    configured = Log.config.tags
-    Log.config.tags = log_tags
-
-    yield
-  ensure
-    Log.config.tags = configured
-  end
-
   # The level is not the subject here, so it is left where everything passes it.
   def self.shows?(log_tags, message_tags)
-    tagged(log_tags) { Log::Display.shows?(:info, message_tags) }
+    DisplaySettings.showing(tags: log_tags) { Log::Display.shows?(:info, message_tags) }
   end
 
   # An allow-list, not a mute list: a message is shown when its own tags intersect the operator's.
@@ -99,12 +89,9 @@ context "Tags" do
   # AND, not OR: both filters have to pass. A tag cannot raise a message above the level.
   context 'Composed with the level' do
     test 'A named tag below the level is not displayed' do
-      configured = Log.config.level
-      Log.config.level = :info
-
-      refute(tagged('http') { Log::Display.shows?(:debug, [:http]) })
-    ensure
-      Log.config.level = configured
+      refute(DisplaySettings.showing(level: :info, tags: 'http') do
+        Log::Display.shows?(:debug, [:http])
+      end)
     end
   end
 

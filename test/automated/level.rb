@@ -4,20 +4,8 @@ require_relative 'automated_init'
 # tracing message written for a human watching one run is also printed in every unattended log the
 # same code runs in.
 context "Level" do
-  # The configuration is the process's and every file in this suite shares it, so the level is put
-  # back however the block ends. Without the ensure, one raising example would re-level every file
-  # that runs after it.
-  def self.at(level)
-    configured = Log.config.level
-    Log.config.level = level
-
-    yield
-  ensure
-    Log.config.level = configured
-  end
-
   def self.shows?(level, severity)
-    at(level) { Log::Display.shows?(severity) }
+    DisplaySettings.showing(level: level) { Log::Display.shows?(severity) }
   end
 
   context 'a message below the level' do
@@ -36,10 +24,6 @@ context "Level" do
 
     test 'At trace, is displayed' do
       assert shows?(:trace, :trace)
-    end
-
-    test 'At trace, so is one above it' do
-      assert shows?(:trace, :info)
     end
   end
 

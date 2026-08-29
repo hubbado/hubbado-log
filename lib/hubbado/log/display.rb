@@ -6,9 +6,11 @@ module Hubbado
       # Both have to pass: a tag cannot raise a message above the level, nor the level rescue one
       # the list leaves out.
       def self.shows?(severity, tags = nil)
-        return false if SEVERITIES.fetch(severity.to_sym) < SEVERITIES.fetch(Log.config.level)
+        config = Log.config
 
-        Log.config.tags.write?(Array(tags))
+        return false if SEVERITIES.fetch(severity.to_sym) < SEVERITIES.fetch(config.level)
+
+        config.tags.write?(tags)
       end
     end
   end

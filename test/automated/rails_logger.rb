@@ -13,25 +13,12 @@ context "RailsLogger" do
   def self.written(severity, msg, data = nil, stacktrace = nil, tags = nil)
     rails_logger = Log::Controls::RailsLogger.example
 
-    shown do
+    DisplaySettings.showing do
       Log::RailsLogger.new(rails_logger: rails_logger)
         .log(Log::Controls::Subject.example, severity, msg, data, stacktrace, tags)
     end
 
     rails_logger.lines
-  end
-
-  def self.shown(level: nil, list: nil)
-    configured_level = Log.config.level
-    configured_tags = Log.config.tags
-
-    Log.config.level = level || :trace
-    Log.config.tags = list || '_all'
-
-    yield
-  ensure
-    Log.config.level = configured_level
-    Log.config.tags = configured_tags
   end
 
   # Rails is not loaded here and is not a dependency of this gem, so the constant has to be
@@ -153,7 +140,7 @@ context "RailsLogger" do
   context "A message the operator did not ask to be shown" do
     rails_logger = Log::Controls::RailsLogger.example
 
-    shown(list: 'http') do
+    DisplaySettings.showing(tags: 'http') do
       Log::RailsLogger.new(rails_logger: rails_logger)
         .log(subject, :warn, message, nil, nil, [:cache])
     end

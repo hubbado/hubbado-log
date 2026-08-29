@@ -28,9 +28,11 @@ module Hubbado
         def logged(severity = nil, message: nil, tags: nil)
           entries = invocations.map { |invocation| entry(invocation) }
 
+          named = symbols(tags)
+
           entries = entries.select { |entry| entry.at?(severity) } unless severity.nil?
           entries = entries.select { |entry| entry.says?(message) } unless message.nil?
-          entries = entries.select { |entry| entry.tagged?(symbols(tags)) } unless tags.nil?
+          entries = entries.select { |entry| entry.tagged?(named) } unless tags.nil?
 
           entries
         end

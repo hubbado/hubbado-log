@@ -9,11 +9,11 @@ context "NotifyRollbar" do
 
   stacktrace = Log::Controls::Stacktrace.example
 
-  def self.notifying(severity, msg, data = nil, stacktrace = nil)
+  def self.notifying(severity, msg, data = nil, stacktrace = nil, tags = nil)
     notifier = Log::Controls::Rollbar.example
 
     Log::NotifyRollbar.new(notifier: notifier)
-      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
+      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace, tags)
 
     notifier
   end
@@ -161,22 +161,9 @@ context "NotifyRollbar" do
   # a raised level can silence the report.
   context "The operator's display settings" do
     def self.despite(tags: nil, level: nil)
-      configured_tags = Log.config.tags
-      configured_level = Log.config.level
-
-      Log.config.tags = tags || '_all'
-      Log.config.level = level || :trace
-
-      notifier = Log::Controls::Rollbar.example
-
-      Log::NotifyRollbar.new(notifier: notifier).log(
-        Log::Controls::Subject.example, :error, Log::Controls::Message.example, nil, nil, [:cookies]
-      )
-
-      notifier
-    ensure
-      Log.config.tags = configured_tags
-      Log.config.level = configured_level
+      DisplaySettings.showing(tags: tags, level: level) do
+        notifying(:error, Log::Controls::Message.example, nil, nil, [:cookies])
+      end
     end
 
     test 'A list leaving the message out does not stop it reaching Rollbar' do

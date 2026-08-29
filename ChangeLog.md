@@ -45,6 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   A printing handler that forgets to ask prints everything, whatever the
   operator set.
 
+
 - The logger substitute names a line by its message and its tags, not only by
   its severity. `logged?`, `messages` and `logged` all take the same criteria.
 

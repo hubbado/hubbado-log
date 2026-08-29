@@ -16,26 +16,13 @@ context "StderrLogger" do
   def self.printed(severity, msg, data = nil, stacktrace = nil, tags = nil)
     io = StringIO.new
 
-    shown do
+    DisplaySettings.showing do
       Log::StderrLogger.new(io: io).log(
         Log::Controls::Subject.example, severity, msg, data, stacktrace, tags
       )
     end
 
     io.string
-  end
-
-  def self.shown(level: nil, list: nil)
-    configured_level = Log.config.level
-    configured_tags = Log.config.tags
-
-    Log.config.level = level || :trace
-    Log.config.tags = list || '_all'
-
-    yield
-  ensure
-    Log.config.level = configured_level
-    Log.config.tags = configured_tags
   end
 
   context "The line itself" do
@@ -133,7 +120,7 @@ context "StderrLogger" do
   context "A message the operator did not ask to be shown" do
     io = StringIO.new
 
-    shown(list: 'http') do
+    DisplaySettings.showing(tags: 'http') do
       Log::StderrLogger.new(io: io).log(subject, :warn, message, nil, nil, [:cache])
     end
 
