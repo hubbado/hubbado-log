@@ -4,7 +4,7 @@ module Hubbado
       attr_accessor :log_handlers
       attr_accessor :subject
 
-      def initialize(subject, log_handlers = [])
+      def initialize(subject, log_handlers = nil)
         self.subject = subject
         self.log_handlers = Array(log_handlers)
       end

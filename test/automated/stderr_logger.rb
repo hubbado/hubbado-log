@@ -13,7 +13,7 @@ context "StderrLogger" do
   stacktrace = Log::Controls::Stacktrace.example
 
   # These scenarios say yes to everything: what is displayed at all is Level's and Tags'.
-  def self.printed(severity, msg, data = nil, stacktrace = nil, tags = [])
+  def self.printed(severity, msg, data = nil, stacktrace = nil, tags = nil)
     io = StringIO.new
 
     shown do
@@ -25,12 +25,12 @@ context "StderrLogger" do
     io.string
   end
 
-  def self.shown(level: :trace, list: '_all')
+  def self.shown(level: nil, list: nil)
     configured_level = Log.config.level
     configured_tags = Log.config.tags
 
-    Log.config.level = level
-    Log.config.tags = list
+    Log.config.level = level || :trace
+    Log.config.tags = list || '_all'
 
     yield
   ensure

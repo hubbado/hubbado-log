@@ -10,7 +10,7 @@ context "RailsLogger" do
   stacktrace = Log::Controls::Stacktrace.example
 
   # These scenarios say yes to everything: what is displayed at all is Level's and Tags'.
-  def self.written(severity, msg, data = nil, stacktrace = nil, tags = [])
+  def self.written(severity, msg, data = nil, stacktrace = nil, tags = nil)
     rails_logger = Log::Controls::RailsLogger.example
 
     shown do
@@ -21,12 +21,12 @@ context "RailsLogger" do
     rails_logger.lines
   end
 
-  def self.shown(level: :trace, list: '_all')
+  def self.shown(level: nil, list: nil)
     configured_level = Log.config.level
     configured_tags = Log.config.tags
 
-    Log.config.level = level
-    Log.config.tags = list
+    Log.config.level = level || :trace
+    Log.config.tags = list || '_all'
 
     yield
   ensure

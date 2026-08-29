@@ -26,13 +26,16 @@ module Hubbado
         end
 
         # For a class handed a logger rather than carrying one, and for a spec that wants both.
-        def self.logger(subject = Subject.example)
+        def self.logger(subject = nil)
+          subject ||= Subject.example
           handler = new
 
           [handler, Log::Logger.new(subject, [handler])]
         end
 
-        def log(subject, severity, message, data = nil, stacktrace = nil, tags = [])
+        def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
+          tags ||= []
+
           messages << {
             subject: subject,
             severity: severity,

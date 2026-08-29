@@ -65,7 +65,7 @@ the application's — a Rails logger, a Rollbar token. Write one by subclassing
 
 ```ruby
 class MyHandler < Hubbado::Log::LogHandler
-  def log(subject, severity, message, data = nil, stacktrace = nil, tags = [])
+  def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
     return unless Hubbado::Log::Display.shows?(severity, tags)
 
     ...

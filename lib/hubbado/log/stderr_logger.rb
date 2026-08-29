@@ -19,7 +19,7 @@ module Hubbado
       # One write, because a line and the detail under it belong together. Three writes let a
       # second thread put its own line between them, and a stacktrace filed under the wrong
       # message is worse than no stacktrace.
-      def log(subject, severity, message, data = nil, stacktrace = nil, tags = [])
+      def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
         return unless Display.shows?(severity, tags)
 
         lines = ["#{severity.to_s.upcase} #{subject}: #{message}"]

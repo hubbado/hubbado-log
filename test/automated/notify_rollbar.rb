@@ -160,12 +160,12 @@ context "NotifyRollbar" do
   # An incident is not a display. This handler never asks Display, so neither a narrowed list nor
   # a raised level can silence the report.
   context "The operator's display settings" do
-    def self.despite(tags: '_all', level: :trace)
+    def self.despite(tags: nil, level: nil)
       configured_tags = Log.config.tags
       configured_level = Log.config.level
 
-      Log.config.tags = tags
-      Log.config.level = level
+      Log.config.tags = tags || '_all'
+      Log.config.level = level || :trace
 
       notifier = Log::Controls::Rollbar.example
 

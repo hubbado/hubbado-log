@@ -27,7 +27,7 @@ module Hubbado
 
       attr_reader :tags
 
-      def initialize(tags = [])
+      def initialize(tags = nil)
         @tags = Array(tags).map { |tag| tag.to_s.to_sym }
       end
 

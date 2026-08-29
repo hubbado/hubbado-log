@@ -5,7 +5,7 @@ module Hubbado
     class Display
       # Both have to pass: a tag cannot raise a message above the level, nor the level rescue one
       # the list leaves out.
-      def self.shows?(severity, tags = [])
+      def self.shows?(severity, tags = nil)
         return false if SEVERITIES.fetch(severity.to_sym) < SEVERITIES.fetch(Log.config.level)
 
         Log.config.tags.write?(Array(tags))
