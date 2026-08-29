@@ -23,7 +23,7 @@ module Hubbado
 
         stacktrace = if data.is_a?(Exception)
                        data.full_message
-                     elsif STACKTRACE_SEVERITIES.include?(severity.to_sym)
+                     elsif traced?(severity, message_tags)
                        format_stacktrace Kernel.caller
                      end
 
@@ -39,6 +39,15 @@ module Hubbado
       end
 
       private
+
+      # Kernel.caller is the most expensive thing in a log call, so it is not paid for a message
+      # every handler would drop — or for a warning, which this gem synthesises one for and the
+      # terminal then declines to print.
+      def traced?(severity, message_tags)
+        return false unless STACKTRACE_SEVERITIES.include?(severity.to_sym)
+
+        log_handlers.any? { |handler| handler.traces?(severity, message_tags) }
+      end
 
       def format_stacktrace(stacktrace)
         stacktrace.join("\n")

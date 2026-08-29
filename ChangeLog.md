@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
   ```ruby
   class MyHandler < Hubbado::Log::LogHandler
-    def log(subject, severity, message, data = nil, stacktrace = nil, tags = [])
+    def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
       return unless Hubbado::Log::Display.shows?(severity, tags)
 
       ...
@@ -45,6 +45,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   A printing handler that forgets to ask prints everything, whatever the
   operator set.
 
+- `LogHandler#traces?(severity, tags)`, asked before a stacktrace is made.
+  `Kernel.caller` costs more than the rest of a log call put together — around
+  19µs at a Rails stack depth against 0.8µs — and it was being paid for messages
+  no handler would use.
+
+  It answers `true`, so a handler written before this existed is asked nothing
+  and keeps the stacktrace it always had. `StderrLogger` answers `false` below
+  `error`, which is where it stops printing one; `NotifyRollbar` answers `false`
+  below `warn`, which is where it stops reporting.
+
+  | | Was | Is now |
+  |---|---|---|
+  | an error the tag list left out | 29.2µs | 1.9µs |
+  | a warning on a terminal | 19µs | 1.6µs |
+
+  The second of those is older than this release: the gem synthesised a
+  stacktrace for every `warn`, and `StderrLogger` has always declined to print
+  one below `error`.
 
 - The logger substitute names a line by its message and its tags, not only by
   its severity. `logged?`, `messages` and `logged` all take the same criteria.

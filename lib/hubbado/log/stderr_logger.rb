@@ -19,6 +19,11 @@ module Hubbado
       # One write, because a line and the detail under it belong together. Three writes let a
       # second thread put its own line between them, and a stacktrace filed under the wrong
       # message is worse than no stacktrace.
+      # Only a failure earns one on a terminal, and only if the operator is being shown it.
+      def traces?(severity, tags = nil)
+        FAILURE_SEVERITIES.include?(severity.to_sym) && Display.shows?(severity, tags)
+      end
+
       def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
         return unless Display.shows?(severity, tags)
 

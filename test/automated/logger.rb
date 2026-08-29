@@ -75,6 +75,57 @@ context "Logger" do
       end
     end
 
+    # Kernel.caller is the most expensive thing in a log call — around 19µs at a Rails stack
+    # depth, against 0.8µs for the rest of it — so a handler is asked whether it would use a
+    # stacktrace before one is synthesised.
+    context 'Synthesising a stacktrace' do
+      untraced = Class.new(Log::Controls::LogHandler) do
+        def traces?(_severity, _tags = nil) = false
+      end
+
+      context 'when no handler would use one' do
+        quiet = untraced.new
+        Log::Logger.new(subject, quiet).error(message)
+
+        test 'None is made' do
+          assert quiet.logged?(:error)
+          assert quiet.stacktrace.nil?
+        end
+      end
+
+      # One stacktrace is made for the message, not one per handler, so a handler that did not
+      # ask still receives what the message carries.
+      context 'when one handler of two would' do
+        quiet = untraced.new
+        tracing = Log::Controls::LogHandler.new
+
+        Log::Logger.new(subject, [quiet, tracing]).error(message)
+
+        test 'It is made, and both are given it' do
+          refute tracing.stacktrace.nil?
+          refute quiet.stacktrace.nil?
+        end
+      end
+
+      # A handler written before this existed does not answer, so it is asked for nothing and
+      # keeps the stacktrace it always had.
+      context 'when a handler does not answer' do
+        silent = Class.new(Hubbado::Log::LogHandler) do
+          attr_reader :seen
+
+          def log(_subject, _severity, _message, _data = nil, stacktrace = nil, _tags = nil)
+            @seen = stacktrace
+          end
+        end.new
+
+        Log::Logger.new(subject, silent).error(message)
+
+        test 'It is made' do
+          refute silent.seen.nil?
+        end
+      end
+    end
+
     context "Severity methods" do
       Log::SEVERITIES.each_key do |severity|
         context "##{severity}" do

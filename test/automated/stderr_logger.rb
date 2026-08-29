@@ -116,6 +116,25 @@ context "StderrLogger" do
     end
   end
 
+  # A stacktrace costs more than the rest of a log call, so the logger asks before making one.
+  # This handler prints one only at error and above, and only when the operator is being shown
+  # the line at all.
+  context "Asked whether it would use a stacktrace" do
+    test "Says no for a warning, which it prints on one line" do
+      refute(DisplaySettings.showing { Log::StderrLogger.new.traces?(:warn) })
+    end
+
+    test "Says yes for a failure it is showing" do
+      assert(DisplaySettings.showing { Log::StderrLogger.new.traces?(:error) })
+    end
+
+    test "Says no for a failure the operator narrowed away" do
+      refute(DisplaySettings.showing(tags: 'http') do
+        Log::StderrLogger.new.traces?(:error, [:cache])
+      end)
+    end
+  end
+
   # A terminal is what an operator narrowing LOG_TAGS is narrowing, so this handler asks first.
   context "A message the operator did not ask to be shown" do
     io = StringIO.new

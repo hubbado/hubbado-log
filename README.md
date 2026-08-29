@@ -81,6 +81,16 @@ tagged with, as symbols.
 **A handler that writes where a person reads asks `Display.shows?` first**, and one that reports
 an incident does not — see [Display and reporting](#display-and-reporting).
 
+A handler is also asked whether it would use a stacktrace, before one is made:
+
+```ruby
+def traces?(severity, tags = nil) = Hubbado::Log::Display.shows?(severity, tags)
+```
+
+It answers `true` unless you say otherwise, so a handler that ignores it keeps what it always had.
+Answering honestly is worth it — `Kernel.caller` costs more than the rest of a log call put
+together, and a message no handler traces should not pay for it.
+
 ### `Hubbado::Log::StderrLogger`
 
 For a command-line tool, where the log is a person watching a run. It is not loaded by

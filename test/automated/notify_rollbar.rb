@@ -157,6 +157,20 @@ context "NotifyRollbar" do
     Object.const_set(:Rollbar, real)
   end
 
+  # An item with no stack under it is one nobody can act on, so this handler wants one for
+  # anything it would report — and for nothing it would not, whatever the operator narrowed to.
+  context "Asked whether it would use a stacktrace" do
+    test "Says yes for a severity it reports" do
+      assert(DisplaySettings.showing(tags: 'http') do
+        Log::NotifyRollbar.new.traces?(:warn, [:cache])
+      end)
+    end
+
+    test "Says no for one below a warning" do
+      refute Log::NotifyRollbar.new.traces?(:info)
+    end
+  end
+
   # An incident is not a display. This handler never asks Display, so neither a narrowed list nor
   # a raised level can silence the report.
   context "The operator's display settings" do
