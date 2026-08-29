@@ -1,89 +1,57 @@
 require_relative 'automated_init'
 
-# Which messages reach a handler at all. Without a level the logger fans every severity to every
-# handler, so a tracing message written for a human watching one run is also written to every
-# unattended log the same code runs in.
+# Which severities the operator is shown. Without a level every severity is displayed, so a
+# tracing message written for a human watching one run is also printed in every unattended log the
+# same code runs in.
 context "Level" do
-  message = Log::Controls::Message.example
+  # The configuration is the process's and every file in this suite shares it, so the level is put
+  # back however the block ends. Without the ensure, one raising example would re-level every file
+  # that runs after it.
+  def self.at(level)
+    configured = Log.config.level
+    Log.config.level = level
 
-  def self.logger(handler, level:)
-    Log::Logger.new(Log::Controls::Subject.example, handler, level: level)
+    yield
+  ensure
+    Log.config.level = configured
+  end
+
+  def self.shows?(level, severity)
+    at(level) { Log::Display.shows?(severity) }
   end
 
   context 'a message below the level' do
-    handler = Log::Controls::LogHandler.new
-
-    logger(handler, level: :info).debug(message)
-
-    test 'Reaches no handler' do
-      refute handler.logged?
+    test 'Is not displayed' do
+      refute shows?(:info, :debug)
     end
   end
 
-  # The most detailed there is: tracing program flow, which a class emits per iteration of a
-  # loop. It sits under debug so that turning on the completion of secondary operations does
-  # not also turn on a message per candidate in a set.
+  # The most detailed there is: tracing program flow, which a class emits per iteration of a loop.
+  # It sits under debug so that turning on the completion of secondary operations does not also
+  # turn on a message per candidate in a set.
   context 'a trace message, under debug' do
-    context 'at debug' do
-      handler = Log::Controls::LogHandler.new
-
-      logger(handler, level: :debug).trace(message)
-
-      test 'Reaches no handler' do
-        refute handler.logged?
-      end
+    test 'At debug, is not displayed' do
+      refute shows?(:debug, :trace)
     end
 
-    context 'at trace' do
-      handler = Log::Controls::LogHandler.new
-
-      logger(handler, level: :trace).trace(message)
-
-      test 'Reaches the handler' do
-        assert handler.severity == :trace
-      end
+    test 'At trace, is displayed' do
+      assert shows?(:trace, :trace)
     end
 
-    context 'at trace, for a message above it' do
-      handler = Log::Controls::LogHandler.new
-
-      logger(handler, level: :trace).info(message)
-
-      test 'Reaches the handler' do
-        assert handler.severity == :info
-      end
+    test 'At trace, so is one above it' do
+      assert shows?(:trace, :info)
     end
   end
 
   context 'a message at the level' do
-    handler = Log::Controls::LogHandler.new
-
-    logger(handler, level: :info).info(message)
-
-    test 'Reaches the handler' do
-      assert handler.severity == :info
+    test 'Is displayed' do
+      assert shows?(:info, :info)
     end
   end
 
   context 'a message above the level' do
-    handler = Log::Controls::LogHandler.new
-
-    logger(handler, level: :info).error(message)
-
-    test 'Reaches the handler' do
-      assert handler.severity == :error
-    end
-  end
-
-  # An invalid severity is still the caller's mistake. The level decides what is printed, not
-  # what may be said, so lowering it must not turn a typo into silence.
-  context 'an invalid severity, below the level' do
-    handler = Log::Controls::LogHandler.new
-
-    test 'Raises an exception' do
-      assert_raises(ArgumentError) do
-        logger(handler, level: :error).log('DEADBEEF', message)
-      end
+    test 'Is displayed' do
+      assert shows?(:info, :error)
     end
   end
 
@@ -124,33 +92,6 @@ context "Level" do
       test 'Is what was set' do
         assert configuration.level == :warn
       end
-    end
-  end
-
-  # A logger built without one is every logger the gem builds itself — Log.configure hands no
-  # level, so the configured one is what reaches a class using the Dependency module.
-  #
-  # The configuration is process-wide and every file in this suite shares it, so it is put back
-  # however the block ends. Without the ensure, one raising example here would re-level every
-  # file that runs after this one — and this is the first of them.
-  def self.configured_level(level)
-    configured = Log.config.level
-    Log.config.level = level
-
-    yield
-  ensure
-    Log.config.level = configured
-  end
-
-  context 'A logger named no level' do
-    handler = Log::Controls::LogHandler.new
-
-    configured_level(:warn) do
-      Log::Logger.new(Log::Controls::Subject.example, handler).info(message)
-    end
-
-    test 'Takes the configured level' do
-      refute handler.logged?
     end
   end
 end

@@ -13,14 +13,31 @@ context "StderrLogger" do
   # A stack that is recognisably one, and recognisably not anything else in the output.
   stacktrace = Log::Controls::Stacktrace.example
 
-  def self.printed(severity, msg, data = nil, stacktrace = nil)
+  # The handler asks Display whether the operator wanted to be shown the message, so these
+  # scenarios say yes to everything: what is displayed at all is Level's and Tags'.
+  def self.printed(severity, msg, data = nil, stacktrace = nil, tags = [])
     io = StringIO.new
 
-    Log::StderrLogger.new(io: io).log(
-      Log::Controls::Subject.example, severity, msg, data, stacktrace
-    )
+    shown do
+      Log::StderrLogger.new(io: io).log(
+        Log::Controls::Subject.example, severity, msg, data, stacktrace, tags
+      )
+    end
 
     io.string
+  end
+
+  def self.shown(level: :trace, list: '_all')
+    configured_level = Log.config.level
+    configured_tags = Log.config.tags
+
+    Log.config.level = level
+    Log.config.tags = list
+
+    yield
+  ensure
+    Log.config.level = configured_level
+    Log.config.tags = configured_tags
   end
 
   context "The line itself" do
@@ -117,6 +134,20 @@ context "StderrLogger" do
 
     test "Writes to $stderr" do
       assert captured.string == "WARN #{subject}: #{message}\n"
+    end
+  end
+
+  # A terminal is the thing an operator narrowing LOG_TAGS is narrowing, so this handler asks
+  # before it writes. Without that, narrowing the log would print everything regardless.
+  context "A message the operator did not ask to be shown" do
+    io = StringIO.new
+
+    shown(list: 'http') do
+      Log::StderrLogger.new(io: io).log(subject, :warn, message, nil, nil, [:cache])
+    end
+
+    test "Is not printed" do
+      assert io.string.empty?
     end
   end
 end

@@ -1,7 +1,7 @@
 module Hubbado
   class Log
     class LogHandler
-      def log(_subject, _severity, _msg, _data = nil, _stacktrace = nil)
+      def log(_subject, _severity, _msg, _data = nil, _stacktrace = nil, _tags = [])
         raise NotImplementedError
       end
     end

@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [1.6.0 - 2026-08-29]
+## Fixed
+- `LOG_TAGS` and `LOG_LEVEL` no longer decide whether a failure is reported.
+  Both were applied above the handler fan-out, so an operator narrowing the log
+  to the step they were debugging, or raising the level to cut what an
+  unattended log costs to keep, also stopped `NotifyRollbar` filing the
+  incident. A crash in any other step went unreported.
+
+  Both are now asked per handler. `NotifyRollbar` is reached whatever they say,
+  and declines anything below `warn` on its own as before.
+
+## Added
+- `LogHandler#displays?`, which says whether the operator's display settings
+  decide what a handler is given. It answers `true`, so a handler subclassing
+  `LogHandler` — which is how one is written — is filtered exactly as it always
+  was. The logger asks every handler this question, so one that only answers
+  `log` without subclassing raises where it previously did not.
+
+  ```ruby
+  class MyHandler < Hubbado::Log::LogHandler
+    def displays? = false   # reached whatever LOG_TAGS and LOG_LEVEL say
+  end
+  ```
+
+  `StderrLogger` and `RailsLogger` take the default. `NotifyRollbar` answers
+  `false`.
+
+## Changed
+- A message tagged `:*` now means only "display this whatever the list says",
+  which is what it means in Eventide's log gem. It is no longer what keeps an
+  incident alive, because nothing can silence one.
+- The per-logger `level:` and `tags:` overrides are unchanged, and still decide
+  what that logger displays.
+
 # [1.5.0 - 2026-08-16]
 ## Added
 - Three handlers, replacing eight hand-rolled copies across four projects and

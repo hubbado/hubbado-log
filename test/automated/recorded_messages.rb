@@ -72,24 +72,6 @@ context "Recorded messages" do
     end
   end
 
-  # The attributes are the most recent message, so a message that was filtered out must not
-  # leave the previous one standing as though it were still the latest.
-  context 'A message the filter left out' do
-    handler = Log::Controls::LogHandler.new
-    logger = Log::Logger.new(Log::Controls::Subject.example, handler, level: :trace, tags: 'http')
-
-    logger.info('written', tag: :http)
-    logger.info('filtered', tag: :cache)
-
-    test 'Records only the written one' do
-      assert handler.messages.length == 1
-    end
-
-    test 'Leaves the attributes on the written one' do
-      assert handler.message == 'written'
-    end
-  end
-
   context 'A handler reused' do
     handler, logger = Log::Controls::LogHandler.logger
 

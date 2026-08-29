@@ -9,13 +9,30 @@ context "RailsLogger" do
 
   stacktrace = Log::Controls::Stacktrace.example
 
-  def self.written(severity, msg, data = nil, stacktrace = nil)
+  # The handler asks Display whether the operator wanted to be shown the message, so these
+  # scenarios say yes to everything: what is displayed at all is Level's and Tags'.
+  def self.written(severity, msg, data = nil, stacktrace = nil, tags = [])
     rails_logger = Log::Controls::RailsLogger.example
 
-    Log::RailsLogger.new(rails_logger: rails_logger)
-      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
+    shown do
+      Log::RailsLogger.new(rails_logger: rails_logger)
+        .log(Log::Controls::Subject.example, severity, msg, data, stacktrace, tags)
+    end
 
     rails_logger.lines
+  end
+
+  def self.shown(level: :trace, list: '_all')
+    configured_level = Log.config.level
+    configured_tags = Log.config.tags
+
+    Log.config.level = level
+    Log.config.tags = list
+
+    yield
+  ensure
+    Log.config.level = configured_level
+    Log.config.tags = configured_tags
   end
 
   # Rails is not loaded here and is not a dependency of this gem, so the constant has to be
@@ -130,6 +147,21 @@ context "RailsLogger" do
 
     test "takes none, and writes to Rails.logger" do
       assert rails_logger.lines == [[:warn, "#{subject}: #{message}"]]
+    end
+  end
+
+  # Read after the fact rather than watched, but still where the messages an operator asked for
+  # go, so this handler asks before it writes.
+  context "A message the operator did not ask to be shown" do
+    rails_logger = Log::Controls::RailsLogger.example
+
+    shown(list: 'http') do
+      Log::RailsLogger.new(rails_logger: rails_logger)
+        .log(subject, :warn, message, nil, nil, [:cache])
+    end
+
+    test "Is not written" do
+      assert rails_logger.lines.empty?
     end
   end
 end

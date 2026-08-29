@@ -4,9 +4,9 @@ context "Logger" do
   handler = Log::Controls::LogHandler.new
   subject = Log::Controls::Subject.example
 
-  # What #log hands a handler, across every severity there is. Built at the lowest level so
-  # that stays the subject — which severities are printed at all is Level's.
-  logger = Log::Logger.new(subject, handler, level: :trace)
+  # What #log hands a handler, across every severity there is. The logger fans out whatever it
+  # is given: which messages an operator is shown at all is Display's.
+  logger = Log::Logger.new(subject, handler)
 
   context '#log' do
     message = Log::Controls::Message.example
@@ -62,6 +62,48 @@ context "Logger" do
           test "Sets severity" do
             assert handler.severity == severity
           end
+        end
+      end
+    end
+
+    # A handler is told what the message was tagged with, which is how one decides whether the
+    # operator asked to be shown it, and what a handler recording somewhere structured files under.
+    context "Tags" do
+      tagged = Log::Controls::LogHandler.new
+      tagged_logger = Log::Logger.new(subject, tagged)
+
+      context 'named singly' do
+        tagged_logger.info(message, tag: :http)
+
+        test 'Reach the handler' do
+          assert tagged.tags == [:http]
+        end
+      end
+
+      context 'named as a list' do
+        tagged_logger.info(message, tags: %i[cache http])
+
+        test 'Reach the handler' do
+          assert tagged.tags == %i[cache http]
+        end
+      end
+
+      context 'not named at all' do
+        tagged_logger.info(message)
+
+        test 'Reach the handler as none' do
+          assert tagged.tags == []
+        end
+      end
+
+      # The operator's list is symbols, because LOG_TAGS is parsed into them. A String reaching a
+      # handler as itself would match nothing, and its message would go missing with nothing said
+      # about it — the one failure this gem must never produce quietly.
+      context 'named as a String' do
+        tagged_logger.info(message, tag: 'cache')
+
+        test 'Reach the handler as the symbol the list is matched on' do
+          assert tagged.tags == [:cache]
         end
       end
     end

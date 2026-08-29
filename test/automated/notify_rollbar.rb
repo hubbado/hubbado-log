@@ -157,6 +157,38 @@ context "NotifyRollbar" do
     Object.const_set(:Rollbar, real)
   end
 
+  # An incident is not a display. This handler never asks Display, so an operator narrowing
+  # LOG_TAGS to the step they are debugging, or raising LOG_LEVEL to cut what an unattended log
+  # costs to keep, cannot silence the report for everything else.
+  context "The operator's display settings" do
+    def self.despite(tags: '_all', level: :trace)
+      configured_tags = Log.config.tags
+      configured_level = Log.config.level
+
+      Log.config.tags = tags
+      Log.config.level = level
+
+      notifier = Log::Controls::Rollbar.example
+
+      Log::NotifyRollbar.new(notifier: notifier).log(
+        Log::Controls::Subject.example, :error, Log::Controls::Message.example, nil, nil, [:cookies]
+      )
+
+      notifier
+    ensure
+      Log.config.tags = configured_tags
+      Log.config.level = configured_level
+    end
+
+    test 'A list leaving the message out does not stop it reaching Rollbar' do
+      assert despite(tags: 'scan').notified?
+    end
+
+    test 'A level above the message does not stop it reaching Rollbar' do
+      assert despite(level: :fatal).notified?
+    end
+  end
+
   # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler
   # itself with no arguments.
   context "Built the way the log system builds it" do

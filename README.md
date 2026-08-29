@@ -180,7 +180,8 @@ back.
 
 ## Level
 
-A message below the level reaches no handler.
+A message below the level is not displayed. It still reaches a handler that reports — see
+[Display and reporting](#display-and-reporting).
 
 ```ruby
 Hubbado::Log.configuration do |config|
@@ -228,7 +229,7 @@ logger.trace('Row read', tag: :data)
 
 ### `LOG_TAGS`
 
-Which tagged messages are written is decided by `LOG_TAGS`, a comma-separated list:
+Which tagged messages are displayed is decided by `LOG_TAGS`, a comma-separated list:
 
     $ LOG_TAGS='_untagged,-data,billing,invoicing' ./my-command
 
@@ -247,6 +248,7 @@ Eventide's behaviour, kept deliberately so one `LOG_TAGS` means the same thing t
 
 Tags compose with the level rather than replacing it: both filters have to pass, so a tag
 cannot raise a message above the level and the level cannot rescue one the list leaves out.
+Both decide what is displayed, and neither decides what is reported.
 
 A single logger can name its own list, as it can name its own level, so one component can be
 read without turning up everything around it:
@@ -259,8 +261,8 @@ The syntax and its behaviour are Eventide's log gem, copied deliberately so that
 operator writes means the same thing in both codebases. Two consequences of that are worth
 knowing before adopting tags:
 
-- **`LOG_TAGS` is an allow-list.** A tagged message is written only if the list names it. Adding
-  a tag to a call site therefore *silences* that message everywhere `LOG_TAGS` has not been
+- **`LOG_TAGS` is an allow-list.** A tagged message is displayed only if the list names it. Adding
+  a tag to a call site therefore *hides* that message everywhere `LOG_TAGS` has not been
   updated — cron, CI and production included. Ship the variable with the tag.
 - **There is no way to mute one concern and keep the rest.** `-name` subtracts only from
   messages an include has already matched, and `_all` is answered before any exclusion, so
@@ -270,6 +272,27 @@ knowing before adopting tags:
 `LOG_TAGS` is shared with Eventide's log gem, as `LOG_LEVEL` is. In a process running both, one
 list decides for both, and an application whose messages are all untagged goes silent unless the
 list contains `_untagged`.
+
+## Display and reporting
+
+`LOG_LEVEL` and `LOG_TAGS` decide what is displayed. They do not decide what is reported: an
+operator narrowing to the step they are debugging is asking to be shown less, not asking for a
+crash elsewhere to go unreported.
+
+Each handler says which it is:
+
+```ruby
+class MyHandler < Hubbado::Log::LogHandler
+  def displays? = true   # the default — LOG_LEVEL and LOG_TAGS decide what it is given
+end
+```
+
+`StderrLogger` and `RailsLogger` take the default. `NotifyRollbar` answers `false`: it is reached
+whatever the operator narrowed or quietened to, and declines anything below `warn` itself.
+
+The logger asks every handler this, so a handler that does not subclass `LogHandler` raises. Tagging
+a `warn` no longer hides it from Rollbar, only from the terminal — and `:*` now means "always
+display", which is what it means in Eventide's log gem.
 
 ## Reading back what a class logged
 
