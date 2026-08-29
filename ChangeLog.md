@@ -34,9 +34,40 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   A printing handler that forgets to ask prints everything, whatever the
   operator set.
 
+- The logger substitute names a line by its message and its tags, not only by
+  its severity. `logged?`, `messages` and `logged` all take the same criteria.
+
+  ```ruby
+  assert logger.logged?(:info, message: /handed back/, tags: %i[rescoring sweep])
+  ```
+
+  Named together rather than one at a time, because a run writes several lines
+  and a message and a tag list asserted apart can each be true of a different
+  one. Before this, a spec asking about a line's tags reached past the
+  substitute into `invocations.first.arguments.fetch(:tag)` — which bound the
+  assertion to which keyword the call site happened to use, so rewriting
+  `tag: :claim` to `tags: [:claim]` broke a spec without changing any behaviour.
+
+  `message:` matches a String in full or a Regexp in part. `tags:` takes one
+  symbol or a list, reads both keywords as the logger does, and names every tag
+  the line carries and no others, in any order.
+
+  Entries answered by `logged` carry `tags` alongside `severity`, `message` and
+  `data`.
+
 ## Breaking
+- **`LOG_LEVEL` and `LOG_TAGS` no longer hold Rollbar volume down.** That is the
+  point of the fix above, and it is a change to what an operator can do: a
+  process running `LOG_LEVEL=error`, or a narrowed list, to keep the incident
+  count low loses that lever on upgrade. Every `warn` and above now files,
+  whatever the settings say, and `NotifyRollbar`'s own `warn` floor is the only
+  one left. Rollbar's own rate limiting is where volume is held now.
 - **`LogHandler#log` takes a sixth argument**, the tags the message was written
-  with, as symbols. A handler defining five parameters raises when called.
+  with, as symbols. A handler defining five parameters raises when called — and
+  raises from inside the logging call, so it takes down the operation being
+  logged rather than only the log line. A keyword with a default would not have
+  softened this: Ruby folds a trailing hash into a sixth positional for a method
+  that declares no keywords, and it raises identically.
 - **The per-logger `level:` and `tags:` overrides are gone.** `Logger.new` takes
   a subject and its handlers, and nothing else; a handler reads the process's
   configuration. Nothing across Hubbado set either — only this gem's own
