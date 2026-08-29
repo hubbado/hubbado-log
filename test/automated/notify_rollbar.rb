@@ -157,9 +157,8 @@ context "NotifyRollbar" do
     Object.const_set(:Rollbar, real)
   end
 
-  # An incident is not a display. This handler never asks Display, so an operator narrowing
-  # LOG_TAGS to the step they are debugging, or raising LOG_LEVEL to cut what an unattended log
-  # costs to keep, cannot silence the report for everything else.
+  # An incident is not a display. This handler never asks Display, so neither a narrowed list nor
+  # a raised level can silence the report.
   context "The operator's display settings" do
     def self.despite(tags: '_all', level: :trace)
       configured_tags = Log.config.tags

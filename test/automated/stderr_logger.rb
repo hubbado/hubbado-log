@@ -3,9 +3,8 @@ require_relative 'automated_init'
 require 'hubbado/log/stderr_logger'
 require 'stringio'
 
-# What a person watching a run sees. A tool whose diagnostics go somewhere else — onto a card, or
-# into an envelope on stdout — says nothing at all on a terminal without this, so a wait for a paid
-# model call is a terminal saying nothing for as long as the call takes.
+# What a person watching a run sees. Without it a tool whose diagnostics go elsewhere says nothing
+# on the terminal, so a wait for a paid model call is silence for as long as the call takes.
 context "StderrLogger" do
   subject = Log::Controls::Subject.example
   message = Log::Controls::Message.example
@@ -13,8 +12,7 @@ context "StderrLogger" do
   # A stack that is recognisably one, and recognisably not anything else in the output.
   stacktrace = Log::Controls::Stacktrace.example
 
-  # The handler asks Display whether the operator wanted to be shown the message, so these
-  # scenarios say yes to everything: what is displayed at all is Level's and Tags'.
+  # These scenarios say yes to everything: what is displayed at all is Level's and Tags'.
   def self.printed(severity, msg, data = nil, stacktrace = nil, tags = [])
     io = StringIO.new
 
@@ -68,8 +66,7 @@ context "StderrLogger" do
     end
   end
 
-  # The logger sets the stacktrace to the exception's own full_message, so the two arguments carry
-  # the same string and a handler honouring both would print the backtrace twice.
+  # The stacktrace argument is the exception's own full_message, so honouring both prints it twice.
   context "A line carrying an exception" do
     exception = Log::Controls::Exception.example
 
@@ -84,8 +81,7 @@ context "StderrLogger" do
     end
   end
 
-  # A handler called directly rather than through the logger has no rendered stacktrace to reuse,
-  # and the backtrace is the part stderr is worth reading for.
+  # Called directly there is no rendered stacktrace to reuse, and the backtrace is the point.
   context "An exception with no stacktrace alongside it" do
     exception = Log::Controls::Exception.example
 
@@ -96,8 +92,7 @@ context "StderrLogger" do
     end
   end
 
-  # An error is logged just prior to raising, so it is a failure somebody has to find, and the
-  # line alone does not say where it came from.
+  # An error is logged just prior to raising, and the line alone does not say where from.
   context "An error carrying no exception" do
     printed = printed(:error, message, nil, stacktrace)
 
@@ -106,10 +101,8 @@ context "StderrLogger" do
     end
   end
 
-  # The logger synthesises a caller stack for warn as well. A warning is a condition to examine
-  # rather than a failure to trace, and its message already names the field and value — so thirty
-  # lines of Ruby stack under every warning in a sweep is the log made unreadable to solve a
-  # problem stderr does not have.
+  # The logger synthesises one for warn too. A warning is a condition to examine rather than a
+  # failure to trace, and thirty lines of stack under every warning in a sweep buries the log.
   context "A warning carrying no exception" do
     printed = printed(:warn, message, nil, stacktrace)
 
@@ -118,8 +111,7 @@ context "StderrLogger" do
     end
   end
 
-  # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler
-  # itself with no arguments. An initialize that grew a required one would fail at process start.
+  # The log system builds every handler with no arguments, so a required one fails at boot.
   context "Built the way the log system builds it" do
     captured = StringIO.new
     original = $stderr
@@ -137,8 +129,7 @@ context "StderrLogger" do
     end
   end
 
-  # A terminal is the thing an operator narrowing LOG_TAGS is narrowing, so this handler asks
-  # before it writes. Without that, narrowing the log would print everything regardless.
+  # A terminal is what an operator narrowing LOG_TAGS is narrowing, so this handler asks first.
   context "A message the operator did not ask to be shown" do
     io = StringIO.new
 

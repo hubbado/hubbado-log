@@ -54,10 +54,9 @@ context "Logger" do
       end
     end
 
-    # #log takes a String as readily as a symbol and passes on what it was given, so the severity
-    # is compared as a symbol wherever it decides anything. Compared raw, a failure written as a
-    # String reaches Rollbar with no stack under it — an item nobody can act on, filed as though
-    # nothing were wrong with it.
+    # #log takes a String as readily as a symbol, so the severity is compared as one wherever it
+    # decides anything. Compared raw, a failure written as a String reaches Rollbar with no stack
+    # under it — an item nobody can act on.
     context 'A severity named as a String' do
       %w[warn error fatal unknown].each do |severity|
         context severity do
@@ -91,7 +90,7 @@ context "Logger" do
     end
 
     # A handler is told what the message was tagged with, which is how one decides whether the
-    # operator asked to be shown it, and what a handler recording somewhere structured files under.
+    # operator asked to be shown it.
     context "Tags" do
       tagged = Log::Controls::LogHandler.new
       tagged_logger = Log::Logger.new(subject, tagged)
@@ -120,9 +119,8 @@ context "Logger" do
         end
       end
 
-      # The operator's list is symbols, because LOG_TAGS is parsed into them. A String reaching a
-      # handler as itself would match nothing, and its message would go missing with nothing said
-      # about it — the one failure this gem must never produce quietly.
+      # The operator's list is symbols. A String reaching a handler as itself would match nothing,
+      # and its message would go missing with nothing said about it.
       context 'named as a String' do
         tagged_logger.info(message, tag: 'cache')
 

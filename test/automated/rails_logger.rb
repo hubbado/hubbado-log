@@ -9,8 +9,7 @@ context "RailsLogger" do
 
   stacktrace = Log::Controls::Stacktrace.example
 
-  # The handler asks Display whether the operator wanted to be shown the message, so these
-  # scenarios say yes to everything: what is displayed at all is Level's and Tags'.
+  # These scenarios say yes to everything: what is displayed at all is Level's and Tags'.
   def self.written(severity, msg, data = nil, stacktrace = nil, tags = [])
     rails_logger = Log::Controls::RailsLogger.example
 
@@ -150,8 +149,7 @@ context "RailsLogger" do
     end
   end
 
-  # Read after the fact rather than watched, but still where the messages an operator asked for
-  # go, so this handler asks before it writes.
+  # Read after the fact rather than watched, but still what an operator narrows, so it asks too.
   context "A message the operator did not ask to be shown" do
     rails_logger = Log::Controls::RailsLogger.example
 

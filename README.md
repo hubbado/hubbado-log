@@ -271,25 +271,24 @@ list contains `_untagged`.
 
 ## Display and reporting
 
-`LOG_LEVEL` and `LOG_TAGS` decide what is displayed. They do not decide what is reported: an
-operator narrowing to the step they are debugging is asking to be shown less, not asking for a
-crash elsewhere to go unreported.
+`LOG_LEVEL` and `LOG_TAGS` decide what is displayed, not what is reported: an operator narrowing
+to the step they are debugging is asking to be shown less, not for a crash elsewhere to go
+unreported.
 
-The logger fans every message out to every handler. A handler that writes where a person reads
-asks whether the operator wanted to be shown it; one that reports does not:
+The logger fans every message out to every handler. One that writes where a person reads asks
+first; one that reports does not:
 
 ```ruby
-Hubbado::Log::Display.shows?(severity, tags)   # => true if LOG_LEVEL and LOG_TAGS both admit it
+Hubbado::Log::Display.shows?(severity, tags)   # => true if the level and the list both admit it
 ```
 
-`StderrLogger` and `RailsLogger` ask. `NotifyRollbar` does not: it is reached whatever the operator
-narrowed or quietened to, and declines anything below `warn` itself.
+`StderrLogger` and `RailsLogger` ask. `NotifyRollbar` does not, and declines below `warn` itself.
 
-**A printing handler that forgets to ask prints everything**, whatever the operator set. That is
-the one thing to remember when writing one.
+**A printing handler that forgets to ask prints everything.** That is the thing to remember when
+writing one.
 
-Tagging a `warn` no longer hides it from Rollbar, only from the terminal — and `:*` now means
-"always display", which is what it means in Eventide's log gem.
+Tagging a `warn` no longer hides it from Rollbar, only from the terminal, and `:*` now means
+"always display" — what it means in Eventide's log gem.
 
 ## Reading back what a class logged
 

@@ -6,13 +6,11 @@ module Hubbado
       module Substitute
         # One line, as the logger read it rather than as the call site typed it.
         Entry = Data.define(:severity, :message, :data, :tags) do
-          # Compared as a symbol, because #log takes a String as readily and passes on what it
-          # was given.
+          # As a symbol, because #log takes a String as readily.
           def at?(name) = severity == name.to_s.to_sym
 
-          # A String names the line in full. A Regexp names enough of it to tell it from the
-          # others, which is what a spec wants when the line carries a record id it does not
-          # care about.
+          # A String names the line in full; a Regexp names enough of it to tell it from the
+          # others, without writing a record id into the spec.
           def says?(pattern)
             return pattern.match?(message.to_s) if pattern.is_a?(Regexp)
 
@@ -25,8 +23,8 @@ module Hubbado
         end
 
         # Everything about what a class said, in order, narrowed by whichever criteria a spec
-        # names. Asked together rather than one at a time: a run writes several lines, and a
-        # message and a tag list asserted apart can each be true of a different one.
+        # names. Named together, because a run writes several lines and a message and a tag list
+        # asserted apart can each be true of a different one.
         def logged(severity = nil, message: nil, tags: nil)
           entries = invocations.map { |invocation| entry(invocation) }
 
@@ -40,16 +38,14 @@ module Hubbado
         # What a class said, where #logged is everything about it.
         def messages(...) = logged(...).map(&:message)
 
-        # Whether, where #logged and #messages ask what. Without anything named, whether anything
-        # was written at all.
+        # Whether, where the two above ask what. Named nothing, whether anything was written.
         def logged?(...) = !logged(...).empty?
 
         private
 
-        # A severity reaches a logger two ways: as the method, from the generated severity methods,
-        # or as #log's first argument, which takes a String as readily and passes on what it was
-        # given. Both tags keywords are kept in one list, as the logger keeps them, so a spec does
-        # not break when a call site is rewritten from the singular to the plural.
+        # A severity arrives as the method name, from the generated severity methods, or as #log's
+        # first argument. Both tags keywords land in one list, as the logger lands them, so a spec
+        # does not break when a call site moves between the two.
         def entry(invocation)
           arguments = invocation.arguments
 

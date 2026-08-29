@@ -89,9 +89,8 @@ context "Logger substitute" do
     end
   end
 
-  # A run writes several lines, so a spec asking about one of them has to say which. Asking about
-  # the message and the tags together is the point: they are one fact about one line, and asserted
-  # apart they can both pass against two different lines.
+  # A run writes several lines, so a spec asking about one has to say which — and say it in one
+  # question, because a message and a tag list asserted apart can each be true of a different line.
   context 'Asking about a particular line' do
     def self.written
       logger = Log::Controls::Logger.example
@@ -108,8 +107,8 @@ context "Logger substitute" do
         assert written.logged?(message: 'rec_2 could not requeue')
       end
 
-      # A line names a record, so matching the whole of it means writing the id into the spec and
-      # changing it whenever the wording moves. A pattern says which line without either.
+      # Matching the whole line means writing a record id into the spec, and changing it whenever
+      # the wording moves.
       test 'Named as a pattern' do
         assert written.logged?(message: /could not requeue/)
       end
@@ -123,21 +122,19 @@ context "Logger substitute" do
       end
     end
 
-    # The logger keeps both keywords in one list, so a spec asserting the singular would otherwise
-    # break when a call site was rewritten to the plural — a change with no behaviour in it.
+    # The logger keeps both keywords in one list, so moving a call site between them is not a
+    # change a spec should notice.
     context 'By its tags' do
       test 'Named through the plural keyword' do
         assert written.logged?(tags: %i[rescoring sweep])
       end
 
-      # One tag is named as itself, as a call site names it. A list is for a line carrying more
-      # than one, above.
+      # Named as a call site names it. A list is for a line carrying more than one, above.
       test 'Named through the singular keyword' do
         assert written.logged?(tags: :skipped)
       end
 
-      # `Logger#log` wraps whatever it is given in `Array()`, so the plural keyword takes a
-      # lonely symbol too, and a line written that way reads back the same.
+      # The plural keyword takes a lonely symbol too, and reads back the same.
       test 'Written as a lonely symbol through the plural keyword' do
         assert written.logged?(tags: :cookies)
       end
@@ -171,8 +168,7 @@ context "Logger substitute" do
       end
     end
 
-    # #logged and #messages take the same criteria, so the three cannot disagree about which lines
-    # are being talked about.
+    # All three take the same criteria, so they cannot disagree about which lines are meant.
     context 'Reading the lines rather than asking about them' do
       test 'Selects them' do
         assert written.logged(tags: :skipped).length == 1

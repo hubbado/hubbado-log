@@ -1,12 +1,10 @@
 require_relative 'automated_init'
 
-# Which concerns the operator is shown. The level says what kind of thing happened; a tag says
-# which concern it belongs to, so a completion that is simply frequent can be filtered without
-# being demoted. LOG_TAGS is an allow-list, following Eventide's log gem, so that an operator
-# moving between the two codebases meets one vocabulary.
+# Which concerns the operator is shown. A tag says which concern a message belongs to, so one
+# that is simply frequent can be filtered without being demoted. The list is Eventide's syntax,
+# so an operator meets one vocabulary in both codebases.
 context "Tags" do
-  # The configuration is the process's and every file in this suite shares it, so the operator's
-  # list is put back however the block ends.
+  # Every file in this suite shares the configuration, so the list is put back however it ends.
   def self.tagged(log_tags)
     configured = Log.config.tags
     Log.config.tags = log_tags
@@ -16,7 +14,7 @@ context "Tags" do
     Log.config.tags = configured
   end
 
-  # The level is not the subject here, so it is left where every scenario passes it.
+  # The level is not the subject here, so it is left where everything passes it.
   def self.shows?(log_tags, message_tags)
     tagged(log_tags) { Log::Display.shows?(:info, message_tags) }
   end
@@ -61,8 +59,8 @@ context "Tags" do
     end
   end
 
-  # Subtracts from the allow-list. It cannot mean "everything except this" — a message has to be
-  # named by an include before an exclusion has anything to take it out of.
+  # Subtracts from the allow-list rather than meaning "everything except": an include has to
+  # match before an exclusion has anything to take out.
   context 'The operator excludes a tag' do
     test 'A message carrying only it is not displayed' do
       refute shows?('http,-data', [:data])
@@ -110,10 +108,8 @@ context "Tags" do
     end
   end
 
-  # Eventide splits LOG_TAGS on commas and takes each entry exactly as written, so a space after
-  # a comma becomes part of the name. Trimming it here would be kinder and would mean the same
-  # string filtered differently in the two gems, which is the one thing sharing the variable
-  # cannot survive. The README tells operators not to put spaces in the list.
+  # Split on commas and nothing else, as Eventide does, so a space becomes part of the name.
+  # Trimming would be kinder and would filter the same string differently in the two gems.
   context 'A list written with spaces after the commas' do
     test 'Takes the space as part of the name, as Eventide does' do
       refute shows?('http, cache', [:cache])
