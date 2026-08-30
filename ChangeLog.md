@@ -4,6 +4,115 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+# [2.0.0 - 2026-08-29]
+## Fixed
+- `LOG_TAGS` and `LOG_LEVEL` no longer decide whether a failure is reported.
+  Both were applied in `Logger`, above the handler fan-out, so an operator
+  narrowing the log to the step they were debugging, or raising the level to cut
+  what an unattended log costs to keep, also stopped `NotifyRollbar` filing the
+  incident. A crash in any other step went unreported.
+
+  `StderrLogger` and `RailsLogger` now ask `Display` for themselves before
+  writing. `NotifyRollbar` does not ask, so it is reached whatever the settings
+  say, and declines anything below `warn` on its own as before.
+
+- A failure written with a String severity is given a stacktrace, as one written
+  with a symbol always was. `#log` validates the severity as a symbol but
+  compared it raw when deciding whether to synthesise a caller stack, so
+  `Hubbado::Log.log('error', msg)` was accepted, logged, and arrived with no
+  stack under it.
+
+  Latent until now — every call site across Hubbado names its severity as a
+  symbol — and worth fixing here because such a message could previously be
+  filtered away entirely. Now that every warning and error reaches Rollbar, it
+  would instead be filed as an item nobody can act on.
+
+## Added
+- `Hubbado::Log::Display`, which answers whether the operator asked to be shown
+  a message. A handler that writes where a person reads asks it; one that
+  reports an incident does not.
+
+  ```ruby
+  class MyHandler < Hubbado::Log::LogHandler
+    def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
+      return unless Hubbado::Log::Display.shows?(severity, tags)
+
+      ...
+    end
+  end
+  ```
+
+  A printing handler that forgets to ask prints everything, whatever the
+  operator set.
+
+- `LogHandler#traces?(severity, tags)`, asked before a stacktrace is made.
+  `Kernel.caller` costs more than the rest of a log call put together — around
+  19µs at a Rails stack depth against 0.8µs — and it was being paid for messages
+  no handler would use.
+
+  It answers `true`, so a handler written before this existed is asked nothing
+  and keeps the stacktrace it always had. `StderrLogger` answers `false` below
+  `error`, which is where it stops printing one; `NotifyRollbar` answers `false`
+  below `warn`, which is where it stops reporting.
+
+  | | Was | Is now |
+  |---|---|---|
+  | an error the tag list left out | 29.2µs | 1.9µs |
+  | a warning on a terminal | 19µs | 1.6µs |
+
+  The second of those is older than this release: the gem synthesised a
+  stacktrace for every `warn`, and `StderrLogger` has always declined to print
+  one below `error`.
+
+- The logger substitute names a line by its message and its tags, not only by
+  its severity. `logged?`, `messages` and `logged` all take the same criteria.
+
+  ```ruby
+  assert logger.logged?(:info, message: /handed back/, tags: %i[rescoring sweep])
+  ```
+
+  Named together rather than one at a time, because a run writes several lines
+  and a message and a tag list asserted apart can each be true of a different
+  one. Before this, a spec asking about a line's tags reached past the
+  substitute into `invocations.first.arguments.fetch(:tag)` — which bound the
+  assertion to which keyword the call site happened to use, so rewriting
+  `tag: :claim` to `tags: [:claim]` broke a spec without changing any behaviour.
+
+  `message:` matches a String in full or a Regexp in part. `tags:` takes one
+  symbol or a list, reads both keywords as the logger does, and names every tag
+  the line carries and no others, in any order.
+
+  Entries answered by `logged` carry `tags` alongside `severity`, `message` and
+  `data`.
+
+## Breaking
+- **`LOG_LEVEL` and `LOG_TAGS` no longer hold Rollbar volume down.** That is the
+  point of the fix above, and it is a change to what an operator can do: a
+  process running `LOG_LEVEL=error`, or a narrowed list, to keep the incident
+  count low loses that lever on upgrade. Every `warn` and above now files,
+  whatever the settings say, and `NotifyRollbar`'s own `warn` floor is the only
+  one left. Rollbar's own rate limiting is where volume is held now.
+- **`LogHandler#log` takes a sixth argument**, the tags the message was written
+  with, as symbols. A handler defining five parameters raises when called — and
+  raises from inside the logging call, so it takes down the operation being
+  logged rather than only the log line. A keyword with a default would not have
+  softened this: Ruby folds a trailing hash into a sixth positional for a method
+  that declares no keywords, and it raises identically.
+- **The per-logger `level:` and `tags:` overrides are gone.** `Logger.new` takes
+  a subject and its handlers, and nothing else; a handler reads the process's
+  configuration. Nothing across Hubbado set either — only this gem's own
+  controls did. This is a deliberate divergence from Eventide's log gem, which
+  keeps that seam: restoring it would mean putting the effective level and list
+  back onto the handler contract that this release widened.
+- **`Controls::LogHandler.attach` and `.logger` no longer take `level:` or
+  `tags:`.** The control records rather than displays, so nothing filters what a
+  spec attaching one can read.
+
+## Changed
+- A message tagged `:*` now means only "display this whatever the list says",
+  which is what it means in Eventide's log gem. It is no longer what keeps an
+  incident alive, because nothing can silence one.
+
 # [1.5.0 - 2026-08-16]
 ## Added
 - Three handlers, replacing eight hand-rolled copies across four projects and

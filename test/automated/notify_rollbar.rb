@@ -9,11 +9,11 @@ context "NotifyRollbar" do
 
   stacktrace = Log::Controls::Stacktrace.example
 
-  def self.notifying(severity, msg, data = nil, stacktrace = nil)
+  def self.notifying(severity, msg, data = nil, stacktrace = nil, tags = nil)
     notifier = Log::Controls::Rollbar.example
 
     Log::NotifyRollbar.new(notifier: notifier)
-      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
+      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace, tags)
 
     notifier
   end
@@ -155,6 +155,38 @@ context "NotifyRollbar" do
   ensure
     Object.send(:remove_const, :Rollbar)
     Object.const_set(:Rollbar, real)
+  end
+
+  # An item with no stack under it is one nobody can act on, so this handler wants one for
+  # anything it would report — and for nothing it would not, whatever the operator narrowed to.
+  context "Asked whether it would use a stacktrace" do
+    test "Says yes for a severity it reports" do
+      assert(DisplaySettings.showing(tags: 'http') do
+        Log::NotifyRollbar.new.traces?(:warn, [:cache])
+      end)
+    end
+
+    test "Says no for one below a warning" do
+      refute Log::NotifyRollbar.new.traces?(:info)
+    end
+  end
+
+  # An incident is not a display. This handler never asks Display, so neither a narrowed list nor
+  # a raised level can silence the report.
+  context "The operator's display settings" do
+    def self.despite(tags: nil, level: nil)
+      DisplaySettings.showing(tags: tags, level: level) do
+        notifying(:error, Log::Controls::Message.example, nil, nil, [:cookies])
+      end
+    end
+
+    test 'A list leaving the message out does not stop it reaching Rollbar' do
+      assert despite(tags: 'scan').notified?
+    end
+
+    test 'A level above the message does not stop it reaching Rollbar' do
+      assert despite(level: :fatal).notified?
+    end
   end
 
   # Hubbado::Log.loggers is config.loggers.map(&:new), so the log system builds every handler

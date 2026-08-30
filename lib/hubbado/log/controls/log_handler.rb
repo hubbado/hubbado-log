@@ -8,10 +8,11 @@ module Hubbado
           @messages ||= []
         end
 
-        # Replaces a class's logger with one writing here, keeping its subject. Neither the
-        # configured level nor the configured tags decide what a spec attaching one of these can
-        # read: it is asking what the class said, and the process's filters are not its subject.
-        def self.attach(instance, level: :trace, tags: Tags::ALL)
+        # Replaces a class's logger with one writing here, keeping its subject. This handler
+        # records rather than displays, so the operator's settings do not decide what a spec
+        # attaching one can read: it is asking what the class said, and the process's filters are
+        # not its subject.
+        def self.attach(instance)
           logger = instance.logger
 
           if logger.nil?
@@ -20,24 +21,28 @@ module Hubbado
           end
 
           new.tap do |handler|
-            instance.logger = Log::Logger.new(logger.subject, [handler], level: level, tags: tags)
+            instance.logger = Log::Logger.new(logger.subject, [handler])
           end
         end
 
         # For a class handed a logger rather than carrying one, and for a spec that wants both.
-        def self.logger(subject = Subject.example, level: :trace, tags: Tags::ALL)
+        def self.logger(subject = nil)
+          subject ||= Subject.example
           handler = new
 
-          [handler, Log::Logger.new(subject, [handler], level: level, tags: tags)]
+          [handler, Log::Logger.new(subject, [handler])]
         end
 
-        def log(subject, severity, message, data = nil, stacktrace = nil)
+        def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
+          tags ||= []
+
           messages << {
             subject: subject,
             severity: severity,
             message: message,
             data: data,
-            stacktrace: stacktrace
+            stacktrace: stacktrace,
+            tags: tags
           }
         end
 
@@ -57,7 +62,7 @@ module Hubbado
 
         # The most recent message. Derived rather than assigned alongside `messages`, so the two
         # cannot disagree about which message is the latest.
-        %i[subject severity message data stacktrace].each do |field|
+        %i[subject severity message data stacktrace tags].each do |field|
           define_method(field) { messages.last&.fetch(field) }
         end
       end

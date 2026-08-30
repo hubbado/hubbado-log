@@ -9,11 +9,14 @@ context "RailsLogger" do
 
   stacktrace = Log::Controls::Stacktrace.example
 
-  def self.written(severity, msg, data = nil, stacktrace = nil)
+  # These scenarios say yes to everything: what is displayed at all is Level's and Tags'.
+  def self.written(severity, msg, data = nil, stacktrace = nil, tags = nil)
     rails_logger = Log::Controls::RailsLogger.example
 
-    Log::RailsLogger.new(rails_logger: rails_logger)
-      .log(Log::Controls::Subject.example, severity, msg, data, stacktrace)
+    DisplaySettings.showing do
+      Log::RailsLogger.new(rails_logger: rails_logger)
+        .log(Log::Controls::Subject.example, severity, msg, data, stacktrace, tags)
+    end
 
     rails_logger.lines
   end
@@ -130,6 +133,34 @@ context "RailsLogger" do
 
     test "takes none, and writes to Rails.logger" do
       assert rails_logger.lines == [[:warn, "#{subject}: #{message}"]]
+    end
+  end
+
+  # Unlike a terminal, a Rails log keeps the frames at every severity, so this handler wants one
+  # whenever it is writing at all.
+  context "Asked whether it would use a stacktrace" do
+    test "Says yes for a warning it is writing" do
+      assert(DisplaySettings.showing { Log::RailsLogger.new.traces?(:warn) })
+    end
+
+    test "Says no for one the operator narrowed away" do
+      refute(DisplaySettings.showing(tags: 'http') do
+        Log::RailsLogger.new.traces?(:warn, [:cache])
+      end)
+    end
+  end
+
+  # Read after the fact rather than watched, but still what an operator narrows, so it asks too.
+  context "A message the operator did not ask to be shown" do
+    rails_logger = Log::Controls::RailsLogger.example
+
+    DisplaySettings.showing(tags: 'http') do
+      Log::RailsLogger.new(rails_logger: rails_logger)
+        .log(subject, :warn, message, nil, nil, [:cache])
+    end
+
+    test "Is not written" do
+      assert rails_logger.lines.empty?
     end
   end
 end

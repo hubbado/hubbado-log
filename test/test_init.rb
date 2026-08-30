@@ -19,3 +19,5 @@ require "debug"
 require "test_bench"; TestBench.activate
 
 include Hubbado
+
+require_relative "./display_settings"

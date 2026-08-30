@@ -4,30 +4,15 @@ module Hubbado
       attr_accessor :log_handlers
       attr_accessor :subject
 
-      def initialize(subject, log_handlers = [], level: nil, tags: nil)
+      def initialize(subject, log_handlers = nil)
         self.subject = subject
         self.log_handlers = Array(log_handlers)
-        @level = level
-        @tags = tags
       end
-
-      # A logger built without one follows the configuration, which is every logger the gem
-      # builds itself: `Log.configure` names neither, so a class using the Dependency module
-      # takes whatever the process was configured for.
-      def level = @level || Log.config.level
-
-      # Named per logger as well as per process, as the level is and as Eventide's log gem has
-      # it, so one component can be read without turning up everything around it.
-      def tags = @tags.nil? ? Log.config.tags : Tags.parse(@tags)
 
       def log(severity, msg, data = nil, tag: nil, tags: nil)
         unless SEVERITIES.keys.include? severity.to_sym
           raise ArgumentError, "Unknown serverity #{severity}"
         end
-
-        # Read after the severity is checked, never before: the level decides what is printed,
-        # not what may be said, so quietening a logger must not turn a typo into silence.
-        return if SEVERITIES.fetch(severity.to_sym) < SEVERITIES.fetch(level)
 
         # Singular and plural are both accepted and both kept, following Eventide's log gem,
         # where real call sites use either and occasionally hand an array to the singular one.
@@ -36,20 +21,14 @@ module Hubbado
         # match nothing and its message would go missing with nothing said about it.
         message_tags = (Array(tags) + Array(tag)).map { |name| name.to_s.to_sym }
 
-        # Both filters have to pass. A tag cannot raise a message above the level, and the level
-        # cannot rescue one the list leaves out.
-        #
-        # `self.` because the `tags:` keyword above shadows the reader.
-        return unless self.tags.write?(message_tags)
-
         stacktrace = if data.is_a?(Exception)
                        data.full_message
-                     elsif STACKTRACE_SEVERITIES.include?(severity)
+                     elsif traced?(severity, message_tags)
                        format_stacktrace Kernel.caller
                      end
 
         log_handlers.each do |handler|
-          handler.log(subject, severity, msg, data, stacktrace)
+          handler.log(subject, severity, msg, data, stacktrace, message_tags)
         end
       end
 
@@ -60,6 +39,15 @@ module Hubbado
       end
 
       private
+
+      # Kernel.caller is the most expensive thing in a log call, so it is not paid for a message
+      # every handler would drop — or for a warning, which this gem synthesises one for and the
+      # terminal then declines to print.
+      def traced?(severity, message_tags)
+        return false unless STACKTRACE_SEVERITIES.include?(severity.to_sym)
+
+        log_handlers.any? { |handler| handler.traces?(severity, message_tags) }
+      end
 
       def format_stacktrace(stacktrace)
         stacktrace.join("\n")

@@ -4,9 +4,9 @@ context "Logger" do
   handler = Log::Controls::LogHandler.new
   subject = Log::Controls::Subject.example
 
-  # What #log hands a handler, across every severity there is. Built at the lowest level so
-  # that stays the subject — which severities are printed at all is Level's.
-  logger = Log::Logger.new(subject, handler, level: :trace)
+  # What #log hands a handler, across every severity there is. The logger fans out whatever it
+  # is given: which messages an operator is shown at all is Display's.
+  logger = Log::Logger.new(subject, handler)
 
   context '#log' do
     message = Log::Controls::Message.example
@@ -54,6 +54,78 @@ context "Logger" do
       end
     end
 
+    # #log takes a String as readily as a symbol, so the severity is compared as one wherever it
+    # decides anything. Compared raw, a failure written as a String reaches Rollbar with no stack
+    # under it — an item nobody can act on.
+    context 'A severity named as a String' do
+      context 'among the ones a stacktrace is synthesised for' do
+        test 'Is given one, as the symbol is' do
+          logger.log('error', message)
+
+          refute handler.stacktrace.nil?
+        end
+      end
+
+      context 'below the stacktrace severities' do
+        test 'Is given none, as the symbol is' do
+          logger.log('info', message)
+
+          assert handler.stacktrace.nil?
+        end
+      end
+    end
+
+    # Kernel.caller is the most expensive thing in a log call — around 19µs at a Rails stack
+    # depth, against 0.8µs for the rest of it — so a handler is asked whether it would use a
+    # stacktrace before one is synthesised.
+    context 'Synthesising a stacktrace' do
+      untraced = Class.new(Log::Controls::LogHandler) do
+        def traces?(_severity, _tags = nil) = false
+      end
+
+      context 'when no handler would use one' do
+        quiet = untraced.new
+        Log::Logger.new(subject, quiet).error(message)
+
+        test 'None is made' do
+          assert quiet.logged?(:error)
+          assert quiet.stacktrace.nil?
+        end
+      end
+
+      # One stacktrace is made for the message, not one per handler, so a handler that did not
+      # ask still receives what the message carries.
+      context 'when one handler of two would' do
+        quiet = untraced.new
+        tracing = Log::Controls::LogHandler.new
+
+        Log::Logger.new(subject, [quiet, tracing]).error(message)
+
+        test 'It is made, and both are given it' do
+          refute tracing.stacktrace.nil?
+          refute quiet.stacktrace.nil?
+        end
+      end
+
+      # A handler written before this existed does not answer, so it is asked for nothing and
+      # keeps the stacktrace it always had.
+      context 'when a handler does not answer' do
+        silent = Class.new(Hubbado::Log::LogHandler) do
+          attr_reader :seen
+
+          def log(_subject, _severity, _message, _data = nil, stacktrace = nil, _tags = nil)
+            @seen = stacktrace
+          end
+        end.new
+
+        Log::Logger.new(subject, silent).error(message)
+
+        test 'It is made' do
+          refute silent.seen.nil?
+        end
+      end
+    end
+
     context "Severity methods" do
       Log::SEVERITIES.each_key do |severity|
         context "##{severity}" do
@@ -62,6 +134,47 @@ context "Logger" do
           test "Sets severity" do
             assert handler.severity == severity
           end
+        end
+      end
+    end
+
+    # A handler is told what the message was tagged with, which is how one decides whether the
+    # operator asked to be shown it.
+    context "Tags" do
+      tagged = Log::Controls::LogHandler.new
+      tagged_logger = Log::Logger.new(subject, tagged)
+
+      context 'named singly' do
+        tagged_logger.info(message, tag: :http)
+
+        test 'Reach the handler' do
+          assert tagged.tags == [:http]
+        end
+      end
+
+      context 'named as a list' do
+        tagged_logger.info(message, tags: %i[cache http])
+
+        test 'Reach the handler' do
+          assert tagged.tags == %i[cache http]
+        end
+      end
+
+      context 'not named at all' do
+        tagged_logger.info(message)
+
+        test 'Reach the handler as none' do
+          assert tagged.tags == []
+        end
+      end
+
+      # The operator's list is symbols. A String reaching a handler as itself would match nothing,
+      # and its message would go missing with nothing said about it.
+      context 'named as a String' do
+        tagged_logger.info(message, tag: 'cache')
+
+        test 'Reach the handler as the symbol the list is matched on' do
+          assert tagged.tags == [:cache]
         end
       end
     end

@@ -14,7 +14,11 @@ module Hubbado
         @rails_logger = rails_logger
       end
 
-      def log(subject, severity, message, data = nil, stacktrace = nil)
+      def traces?(severity, tags = nil) = Display.shows?(severity, tags)
+
+      def log(subject, severity, message, data = nil, stacktrace = nil, tags = nil)
+        return unless Display.shows?(severity, tags)
+
         rails_severity = RAILS_SEVERITIES.fetch(severity.to_sym, severity)
 
         rails_logger.send(rails_severity, "#{subject}: #{message}")

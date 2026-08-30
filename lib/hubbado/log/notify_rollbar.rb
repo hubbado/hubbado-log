@@ -17,7 +17,9 @@ module Hubbado
         @notifier = notifier
       end
 
-      def log(subject, severity, message, data = nil, stacktrace = nil)
+      def traces?(severity, _tags = nil) = LEVELS.key?(severity.to_sym)
+
+      def log(subject, severity, message, data = nil, stacktrace = nil, _tags = nil)
         level = LEVELS[severity.to_sym]
         return if level.nil?
 
